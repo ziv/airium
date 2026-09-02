@@ -8,3 +8,30 @@ body,
   overflow: hidden;
   background: #000;
 }
+
+#hud {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  margin: 0;
+  padding: 8px 12px;
+  font:
+    13px/1.45 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  color: #9cff9c;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(156, 255, 156, 0.35);
+  border-radius: 4px;
+  white-space: pre;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+#hud.crashed {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.5);
+}

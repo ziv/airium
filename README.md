@@ -12,9 +12,23 @@ npm run dev
 
 Without an Ion token the globe renders with OpenStreetMap imagery and no terrain.
 
-## Start configuration
+## Flying
 
-The starting position is defined in `src/start.config.json`:
+| Key       | Action                                 |
+| --------- | -------------------------------------- |
+| `←` / `→` | Roll left / right (60°/s while held)   |
+| `↓` / `↑` | Nose up / nose down (30°/s while held) |
+| `[` / `]` | Yaw left / right (20°/s while held)    |
+| `+` / `-` | Throttle up / down in 5 % steps        |
+| `R`       | Reset to the start configuration       |
+
+The HUD in the top-left shows throttle, attitude, heading, angle of attack, airspeed, vertical
+speed, height above ground, altitude and position. A hard impact freezes the sim with **CRASHED**;
+press `R`.
+
+## Configuration
+
+`src/start.config.json` has two sections. The `start` section defines where you begin:
 
 | Key       | Unit                            | Notes       |
 | --------- | ------------------------------- | ----------- |
@@ -25,7 +39,28 @@ The starting position is defined in `src/start.config.json`:
 | `speed`   | metres per second               |             |
 | `fov`     | vertical field of view, degrees | 1 to 179    |
 
-Any key can be overridden from the URL for quick experiments:
+The `aircraft` section defines the flight model:
+
+| Key               | Unit | Notes                                              |
+| ----------------- | ---- | -------------------------------------------------- |
+| `weight`          | kg   | Aircraft mass                                      |
+| `wingArea`        | m²   | Reference wing area                                |
+| `liftCoefficient` | –    | Lift coefficient at zero angle of attack           |
+| `dragCoefficient` | –    | Zero-lift drag coefficient (induced drag is added) |
+| `maxThrust`       | N    | Thrust at 100 % throttle                           |
+
+The remaining sections tune the flight model; nothing in the physics is hard-coded.
+Angles are degrees, rates are degrees per second.
+
+| Section        | Keys                                                                                                                                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aerodynamics` | `liftSlope` (per rad), `stallAngle`, `zeroLiftAngle`, `inducedDragFactor`, `trimLoadFactor`, `minAeroSpeed`, `stabilityRatePerSpeed`, `stabilityMaxRate` |
+| `controls`     | `rollRate`, `pitchRate`, `yawRate`, `throttleStep` (fraction per key press)                                                                              |
+| `ground`       | `maxLandingSinkRate`, `maxLandingRoll`, `minLandingPitch`, `rollingFriction`, `maxGroundPitch`, `liftoffHeight`                                          |
+| `environment`  | `gravity`, `seaLevelAirDensity`, `densityScaleHeight`, `earthRadius`                                                                                     |
+| `simulation`   | `physicsHz` (fixed physics steps per second), `maxFrameSeconds` (longest frame gap simulated)                                                            |
+
+Any `start` key can be overridden from the URL for quick experiments:
 
 ```
 http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&fov=75

@@ -7,7 +7,8 @@ import {
   type TerrainProvider,
   type Viewer,
 } from 'cesium';
-import type { StartConfig } from './start-config';
+import { hprFromAttitude } from './attitude';
+import type { AircraftState } from './physics';
 
 /**
  * Returns the terrain surface height (metres above the WGS84 ellipsoid) at a
@@ -36,46 +37,26 @@ export async function sampleGroundHeight(
   return 0;
 }
 
-/** Converts a height above ground into a height above the ellipsoid. */
-export function toEllipsoidHeight(groundHeight: number, heightAboveGround: number): number {
-  return groundHeight + heightAboveGround;
+/**
+ * Synchronous terrain height under a point from the currently loaded tiles,
+ * or undefined if that area is not loaded yet. Cheap enough to call per frame.
+ */
+export function loadedGroundHeight(viewer: Viewer, lat: number, lon: number): number | undefined {
+  const h = viewer.scene.globe.getHeight(Cartographic.fromDegrees(lon, lat));
+  return h !== undefined && Number.isFinite(h) ? h : undefined;
 }
 
-/**
- * Places the camera at (lat, lon) and `config.height` metres above the terrain,
- * looking along `heading` with the nose level (pitch 0, roll 0) and the
- * configured vertical field of view.
- *
- * The camera is placed immediately using the ellipsoid as a provisional ground
- * so the start area is visible while terrain loads, then corrected once the
- * real ground height is known. Resolves with the ellipsoid height used.
- */
-export async function applyStartConfig(
-  viewer: Viewer,
-  config: StartConfig,
-  terrainReady: Promise<TerrainProvider>,
-): Promise<number> {
-  const { camera } = viewer;
-
-  if (camera.frustum instanceof PerspectiveFrustum) {
-    camera.frustum.fov = CesiumMath.toRadians(config.fov);
+export function setCameraFov(viewer: Viewer, fovDegrees: number): void {
+  if (viewer.camera.frustum instanceof PerspectiveFrustum) {
+    viewer.camera.frustum.fov = CesiumMath.toRadians(fovDegrees);
   }
+}
 
-  const place = (ellipsoidHeight: number) =>
-    camera.setView({
-      destination: Cartesian3.fromDegrees(config.lon, config.lat, ellipsoidHeight),
-      orientation: {
-        heading: CesiumMath.toRadians(config.heading),
-        pitch: 0,
-        roll: 0,
-      },
-    });
-
-  place(toEllipsoidHeight(0, config.height));
-
-  const provider = await terrainReady;
-  const ground = await sampleGroundHeight(provider, config.lat, config.lon);
-  const ellipsoidHeight = toEllipsoidHeight(ground, config.height);
-  place(ellipsoidHeight);
-  return ellipsoidHeight;
+/** Cockpit view: the camera sits at the aircraft and shares its attitude. */
+export function placeCamera(viewer: Viewer, state: AircraftState): void {
+  const { heading, pitch, roll } = hprFromAttitude(state.attitude);
+  viewer.camera.setView({
+    destination: Cartesian3.fromDegrees(state.lon, state.lat, state.height),
+    orientation: { heading, pitch, roll },
+  });
 }

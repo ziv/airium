@@ -82,4 +82,37 @@ Flight controls:
 
 Minimal textual HUD (flight control details, height, speed, etc.)
 
+Decisions (2026-09-02):
 
+- Physics: point-mass model with angle of attack (`src/sim/physics.ts`). Lift = ½ρv²·S·CL(α),
+  drag = ½ρv²·S·(CD0 + 0.05·CL²), thrust = throttle·maxThrust along the nose, gravity = weight·g.
+  CL(α) = liftCoefficient + 5·α up to a 15° stall, then decays to zero at 30°. Air density falls off
+  with altitude. With neutral controls the nose seeks the angle of attack that gives `trimLoadFactor` g of lift
+  (clamped to the stall), turning toward it at a rate that grows with airspeed, so the aircraft
+  flies level at any speed and mushes when too slow.
+- Config gains an `aircraft` section: `weight` (kg), `wingArea` (m², added because the forces need
+  it), `liftCoefficient` (CL at zero AoA), `dragCoefficient` (CD0), `maxThrust` (N). The start
+  parameters moved under `start`. Defaults are a Cessna-172-like light aircraft.
+- Controls are rates while held: roll 60°/s, pitch 30°/s, yaw 20°/s; release stops the rotation.
+  `+`/`-` step throttle by 5 % and it stays put. Flight-sim convention: arrow down = nose up.
+  `R` resets to the start configuration.
+- Ground: below 4 m/s sink, under 20° bank and not nose-down, touchdown puts the aircraft on its
+  wheels (roll forced level, rolling friction, steering with yaw), so takeoff and landing work.
+  Harder impacts freeze the sim with CRASHED in red; `R` resets. Ground height under the aircraft
+  comes from the loaded terrain tiles each frame, falling back to the last known value.
+- All flight-model numbers live in `start.config.json` (sections `aerodynamics`, `controls`,
+  `ground`, `environment`), validated with ranges like the rest; the physics reads them and has no
+  built-in constants. Angles in the file are degrees.
+- Fixed-rate physics steps (`simulation.physicsHz`, 120 by default, with `maxFrameSeconds` capping
+  catch-up after a stall) driven from Cesium's clock tick; cockpit camera follows the aircraft.
+- HUD (`src/hud.ts`): status, throttle, roll/pitch/heading, AoA, airspeed (m/s and kt), vertical
+  speed, AGL, altitude, lat/lon, CL/CD, and a key legend.
+
+Note: the shipped start config (200 m AGL, speed 0) falls and crashes within seconds because the
+aircraft has no airspeed. Use `?speed=55` for an in-flight start or `?height=0` for a takeoff.
+
+Acceptance:
+
+- Unit tests cover attitude math, lift curve, forces, takeoff roll, landing, crash, and key mapping
+  (50 tests). Verified 2026-09-02 in the browser: roll/pitch/yaw/throttle respond with the right
+  sign and rate, the horizon banks correctly, reset works, the HUD updates every frame.

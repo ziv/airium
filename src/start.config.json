@@ -1,8 +1,51 @@
 {
-  "lat": 47.2692,
-  "lon": 11.2,
-  "height": 200,
-  "heading": 90,
-  "speed": 0,
-  "fov": 60
+  "start": {
+    "lat": 47.2692,
+    "lon": 11.2,
+    "height": 2000,
+    "heading": 90,
+    "speed": 200,
+    "fov": 60
+  },
+  "aircraft": {
+    "weight": 1100,
+    "wingArea": 16,
+    "liftCoefficient": 0.4,
+    "dragCoefficient": 0.03,
+    "maxThrust": 3000
+  },
+  "aerodynamics": {
+    "liftSlope": 5,
+    "stallAngle": 15,
+    "zeroLiftAngle": 30,
+    "inducedDragFactor": 0.05,
+    "trimLoadFactor": 1,
+    "minAeroSpeed": 1,
+    "stabilityRatePerSpeed": 0.4,
+    "stabilityMaxRate": 15
+  },
+  "controls": {
+    "rollRate": 60,
+    "pitchRate": 30,
+    "yawRate": 20,
+    "throttleStep": 0.05
+  },
+  "ground": {
+    "maxLandingSinkRate": 4,
+    "maxLandingRoll": 20,
+    "minLandingPitch": -5,
+    "rollingFriction": 0.03,
+    "maxGroundPitch": 15,
+    "liftoffHeight": 0.05
+  },
+  "environment": {
+    "gravity": 9.80665,
+    "seaLevelAirDensity": 1.225,
+    "densityScaleHeight": 8500,
+    "earthRadius": 6371000
+  },
+  "simulation": {
+    "physicsHz": 120,
+    "maxFrameSeconds": 0.1
+  }
 }
