@@ -1,0 +1,32 @@
+{
+  "name": "airium",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A flight simulator based on Cesium.js as world engine",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "cesium": "^1.145.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
+    "eslint-config-prettier": "^10.1.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.69.0",
+    "vite": "^8.2.2",
+    "vite-plugin-cesium": "^1.2.23",
+    "vitest": "^4.1.11"
+  }
+}
