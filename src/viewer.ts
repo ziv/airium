@@ -14,6 +14,17 @@ export interface World {
   terrainReady: Promise<TerrainProvider>;
 }
 
+/** Switches a viewer to OpenStreetMap imagery on a smooth ellipsoid. */
+function useTokenFreeWorld(viewer: Viewer): TerrainProvider {
+  const terrainProvider = new EllipsoidTerrainProvider();
+  viewer.scene.terrainProvider = terrainProvider;
+  viewer.imageryLayers.removeAll();
+  viewer.imageryLayers.add(
+    new ImageryLayer(new OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' })),
+  );
+  return terrainProvider;
+}
+
 /**
  * Creates the Cesium world viewer.
  *
@@ -64,9 +75,17 @@ export function createViewer(container: HTMLElement, ionToken: string | null): W
   } else {
     const terrain = Terrain.fromWorldTerrain();
     viewer = new Viewer(container, { ...baseOptions, terrain });
-    terrainReady = new Promise((resolve, reject) => {
+    const v = viewer;
+    terrainReady = new Promise((resolve) => {
       terrain.readyEvent.addEventListener((provider) => resolve(provider));
-      terrain.errorEvent.addEventListener((error) => reject(error));
+      terrain.errorEvent.addEventListener((error) => {
+        // Typically a 403: the token is not valid for this origin. Keep flying token-free.
+        console.warn(
+          '[airium] Cesium Ion rejected the token (is this origin allowed for it?); falling back to OpenStreetMap imagery and ellipsoid terrain.',
+          error,
+        );
+        resolve(useTokenFreeWorld(v));
+      });
     });
   }
 

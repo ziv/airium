@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.1",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.0",
     "globals": "^17.12.0",
@@ -26,7 +27,7 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.69.0",
     "vite": "^8.2.2",
-    "vite-plugin-cesium": "^1.2.23",
+    "vite-plugin-static-copy": "^4.1.1",
     "vitest": "^4.1.11"
   }
 }

@@ -8,6 +8,9 @@ import { resolveSimConfig } from './sim/sim-config';
 import startJson from './start.config.json';
 import { createViewer } from './viewer';
 
+/** Longest we wait for terrain tiles under the start point before flying anyway. */
+const SETTLE_TIMEOUT_MS = 10_000;
+
 async function main(): Promise<void> {
   const container = document.getElementById('cesiumContainer');
   if (!container) {
@@ -30,7 +33,7 @@ async function main(): Promise<void> {
   placeCamera(viewer, state);
 
   const provider = await terrainReady;
-  const startGroundHeight = await sampleGroundHeight(provider, start.lat, start.lon);
+  let startGroundHeight = await sampleGroundHeight(provider, start.lat, start.lon);
   state = createInitialState(start, startGroundHeight);
   placeCamera(viewer, state);
   console.info('[airium] config', {
@@ -39,6 +42,12 @@ async function main(): Promise<void> {
     startGroundHeight,
   });
 
+  // Hold the aircraft at the start until the globe reports its tiles loaded
+  // (or a timeout passes), so the ground under it is known from detailed
+  // tiles before the simulation starts.
+  const settleDeadline = performance.now() + SETTLE_TIMEOUT_MS;
+  let settled = false;
+
   let last = performance.now();
   let accumulator = 0;
 
@@ -46,6 +55,22 @@ async function main(): Promise<void> {
     const now = performance.now();
     accumulator += Math.min(maxFrameDt, (now - last) / 1000);
     last = now;
+
+    if (!settled) {
+      const loaded = loadedGroundHeight(viewer, start.lat, start.lon);
+      if (loaded !== undefined) {
+        startGroundHeight = loaded;
+        state = createInitialState(start, startGroundHeight);
+        placeCamera(viewer, state);
+      }
+      settled = loaded !== undefined || now >= settleDeadline;
+      if (!settled) {
+        accumulator = 0;
+        hud.update(state, computeForces(state, sim));
+        return;
+      }
+      console.info('[airium] terrain settled, ground at start:', startGroundHeight);
+    }
 
     if (input.consumeReset()) {
       input.throttle = 0;

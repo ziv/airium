@@ -68,6 +68,19 @@ Any `start` key can be overridden from the URL for quick experiments:
 http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&fov=75
 ```
 
+## Deploying to GitHub Pages
+
+Production builds are rooted at `/airium/`, the path of a GitHub Pages project site, so every URL
+in `dist/index.html` (app bundle and Cesium assets) is prefixed accordingly. The dev server stays
+at `/`. Set `BASE_PATH` to change it, e.g. `BASE_PATH=/ npm run build` for a custom domain or
+`BASE_PATH=/my-fork/ npm run build` for a renamed repository. `npm run preview` serves the build at
+`http://localhost:4173/airium/`; if the Ion token is restricted to specific origins, either allow
+`http://localhost:4173` in the Ion dashboard or run `npm run preview -- --port 5173`. When Ion
+rejects the token the app logs a warning and falls back to OpenStreetMap imagery without terrain.
+
+Cesium is bundled from npm; its runtime files (Workers, Assets, Widgets, ThirdParty) are copied to
+`cesium/` at build time by `vite-plugin-static-copy`, and `CESIUM_BASE_URL` follows the base path.
+
 ## Scripts
 
 | Command                | Purpose                             |

@@ -20,7 +20,11 @@ Decisions (clarified 2026-09-02):
   in `src/start.config.json` (an origin-restricted token valid only on GitHub Pages and localhost).
   If the token is missing or blank the app falls back to token-free OpenStreetMap imagery and
   ellipsoid terrain so the globe still renders.
-- Cesium static assets are served via `vite-plugin-cesium`.
+- Cesium is bundled from npm; its runtime files (Workers, Assets, Widgets, ThirdParty) are copied to
+  `cesium/` with `vite-plugin-static-copy` and `CESIUM_BASE_URL` is defined to match the Vite base
+  (replaced `vite-plugin-cesium` on 2026-09-03 because it misplaces assets under a non-root base).
+- Hosting: GitHub Pages project site, so production builds use Vite `base: '/airium/'` (dev stays at
+  `/`, override with `BASE_PATH`). Set in `vite.config.ts` on 2026-09-03.
 
 Acceptance:
 
