@@ -7,7 +7,7 @@
     "lon": 11.2,
     "height": 2000,
     "heading": 90,
-    "speed": 0,
+    "speed": 100,
     "fov": 60
   },
   "aircraft": {
