@@ -24,7 +24,8 @@ Decisions (clarified 2026-09-02):
   `cesium/` with `vite-plugin-static-copy` and `CESIUM_BASE_URL` is defined to match the Vite base
   (replaced `vite-plugin-cesium` on 2026-09-03 because it misplaces assets under a non-root base).
 - Hosting: GitHub Pages project site, so production builds use Vite `base: '/airium/'` (dev stays at
-  `/`, override with `BASE_PATH`). Set in `vite.config.ts` on 2026-09-03.
+  `/`, override with `BASE_PATH`). Set in `vite.config.ts` on 2026-09-03. Published from the
+  committed `docs/` folder via `npm run build:pages`.
 
 Acceptance:
 

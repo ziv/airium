@@ -70,9 +70,17 @@ http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&fov=75
 
 ## Deploying to GitHub Pages
 
+The site is published from the `docs/` folder on `main` (repository settings → Pages → Deploy from
+a branch → `/docs`). Rebuild it and commit the result whenever you want to publish:
+
+```sh
+npm run build:pages
+git add docs && git commit -m "Publish"
+```
+
 Production builds are rooted at `/airium/`, the path of a GitHub Pages project site, so every URL
-in `dist/index.html` (app bundle and Cesium assets) is prefixed accordingly. The dev server stays
-at `/`. Set `BASE_PATH` to change it, e.g. `BASE_PATH=/ npm run build` for a custom domain or
+in the built `index.html` (app bundle and Cesium assets) is prefixed accordingly. The dev server
+stays at `/`. Set `BASE_PATH` to change it, e.g. `BASE_PATH=/ npm run build` for a custom domain or
 `BASE_PATH=/my-fork/ npm run build` for a renamed repository. `npm run preview` serves the build at
 `http://localhost:4173/airium/`; if the Ion token is restricted to specific origins, either allow
 `http://localhost:4173` in the Ion dashboard or run `npm run preview -- --port 5173`. When Ion
@@ -87,6 +95,7 @@ Cesium is bundled from npm; its runtime files (Workers, Assets, Widgets, ThirdPa
 | ---------------------- | ----------------------------------- |
 | `npm run dev`          | Start the Vite dev server           |
 | `npm run build`        | Type-check and build for production |
+| `npm run build:pages`  | Same, into `docs/` for GitHub Pages |
 | `npm run preview`      | Serve the production build locally  |
 | `npm test`             | Run unit tests with Vitest          |
 | `npm run lint`         | Lint with ESLint                    |
