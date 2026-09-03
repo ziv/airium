@@ -35,12 +35,23 @@ export const NEUTRAL_CONTROLS: Controls = { roll: 0, pitch: 0, yaw: 0, throttle:
 
 export type FlightStatus = 'ground' | 'airborne' | 'crashed';
 
+/** Current rotation rates about the body axes, rad/s (positive = roll right, nose up, nose right). */
+export interface BodyRates {
+  roll: number;
+  pitch: number;
+  yaw: number;
+}
+
+export const ZERO_RATES: BodyRates = { roll: 0, pitch: 0, yaw: 0 };
+
 export interface AircraftState {
   lat: number;
   lon: number;
   /** Metres above the WGS84 ellipsoid. */
   height: number;
   attitude: Attitude;
+  /** Control-driven rotation rates, which build up and decay smoothly. */
+  bodyRates: BodyRates;
   /** Velocity over ground in the local East-North-Up frame, m/s. */
   velocity: Vec3;
   throttle: number;
@@ -75,6 +86,7 @@ export function createInitialState(start: StartConfig, groundHeight: number): Ai
     lon: start.lon,
     height: groundHeight + start.height,
     attitude,
+    bodyRates: ZERO_RATES,
     velocity: scale(attitude.forward, start.speed),
     throttle: 0,
     status: onGround ? 'ground' : 'airborne',
@@ -190,6 +202,38 @@ function applyStability(
   return rotateAttitude(att, axis, Math.min(angle, rate * dt));
 }
 
+/**
+ * Eases a rotation rate toward the commanded rate. The rate builds up with the
+ * response time constant while a key is held and decays with the release time
+ * constant when it is let go, so control feels like it has momentum.
+ */
+export function easeRate(
+  current: number,
+  target: number,
+  responseTime: number,
+  releaseTime: number,
+  dt: number,
+): number {
+  const tau = target !== 0 ? responseTime : releaseTime;
+  if (tau <= 0) return target;
+  return current + (target - current) * (1 - Math.exp(-dt / tau));
+}
+
+function updateBodyRates(
+  rates: BodyRates,
+  controls: Controls,
+  cfg: SimConfig['controls'],
+  dt: number,
+): BodyRates {
+  const ease = (current: number, input: number, maxRate: number) =>
+    easeRate(current, input * toRadians(maxRate), cfg.responseTime, cfg.releaseTime, dt);
+  return {
+    roll: ease(rates.roll, controls.roll, cfg.rollRate),
+    pitch: ease(rates.pitch, controls.pitch, cfg.pitchRate),
+    yaw: ease(rates.yaw, controls.yaw, cfg.yawRate),
+  };
+}
+
 function horizontal(v: Vec3): Vec3 {
   return vec3(v.x, v.y, 0);
 }
@@ -212,12 +256,17 @@ export function step(
   const onGround = state.status === 'ground';
   const throttle = clamp(controls.throttle, 0, 1);
 
-  // Attitude: pilot input, then aerodynamic stability.
+  // Attitude: pilot input (smoothed rates), then aerodynamic stability.
+  const bodyRates = updateBodyRates(
+    onGround ? { ...state.bodyRates, roll: 0 } : state.bodyRates,
+    { ...controls, roll: onGround ? 0 : controls.roll },
+    rates,
+    dt,
+  );
   let attitude = state.attitude;
-  const rollInput = onGround ? 0 : controls.roll;
-  attitude = rotateBody(attitude, 'roll', rollInput * toRadians(rates.rollRate) * dt);
-  attitude = rotateBody(attitude, 'pitch', controls.pitch * toRadians(rates.pitchRate) * dt);
-  attitude = rotateBody(attitude, 'yaw', controls.yaw * toRadians(rates.yawRate) * dt);
+  attitude = rotateBody(attitude, 'roll', bodyRates.roll * dt);
+  attitude = rotateBody(attitude, 'pitch', bodyRates.pitch * dt);
+  attitude = rotateBody(attitude, 'yaw', bodyRates.yaw * dt);
 
   let velocity = state.velocity;
   const airspeed = length(velocity);
@@ -283,5 +332,15 @@ export function step(
     status = 'airborne';
   }
 
-  return { lat, lon, height, attitude, velocity, throttle, status, groundHeight: ground };
+  return {
+    lat,
+    lon,
+    height,
+    attitude,
+    bodyRates,
+    velocity,
+    throttle,
+    status,
+    groundHeight: ground,
+  };
 }

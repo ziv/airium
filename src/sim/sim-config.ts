@@ -61,10 +61,17 @@ export interface AerodynamicsConfig {
 
 /** How the pilot's keys move the aircraft. */
 export interface ControlsConfig {
-  /** Degrees per second while the key is held. */
+  /** Maximum degrees per second reached while the key is held. */
   rollRate: number;
   pitchRate: number;
   yawRate: number;
+  /**
+   * Seconds for the rotation rate to build up toward the maximum after a key is pressed
+   * (exponential time constant: ~63 % after one, ~95 % after three). 0 = instant.
+   */
+  responseTime: number;
+  /** Seconds for the rotation rate to die away after the key is released. 0 = instant stop. */
+  releaseTime: number;
   /** Fraction of full throttle per key press (0.05 = 5 %). */
   throttleStep: number;
 }
@@ -105,7 +112,14 @@ export interface SimulationConfig {
   maxFrameSeconds: number;
 }
 
+/** Cesium Ion access. */
+export interface IonConfig {
+  /** Ion access token, or null to run token-free (OpenStreetMap imagery, no terrain). */
+  token: string | null;
+}
+
 export interface SimConfig {
+  ion: IonConfig;
   start: StartConfig;
   aircraft: AircraftConfig;
   aerodynamics: AerodynamicsConfig;
@@ -154,6 +168,8 @@ const CONTROLS_RANGES: Ranges<ControlsConfig> = {
   rollRate: { min: 0, max: 720 },
   pitchRate: { min: 0, max: 720 },
   yawRate: { min: 0, max: 720 },
+  responseTime: { min: 0, max: 30 },
+  releaseTime: { min: 0, max: 30 },
   throttleStep: { min: 0.001, max: 1 },
 };
 
@@ -188,7 +204,8 @@ const SECTION_RANGES = {
   simulation: SIMULATION_RANGES,
 } as const;
 
-export const SECTION_NAMES = Object.keys(SECTION_RANGES) as (keyof SimConfig)[];
+type NumericSection = keyof typeof SECTION_RANGES;
+export const SECTION_NAMES = Object.keys(SECTION_RANGES) as NumericSection[];
 export const START_CONFIG_KEYS = Object.keys(START_RANGES) as (keyof StartConfig)[];
 
 export class SimConfigError extends Error {
@@ -228,20 +245,38 @@ function validateSection<T extends string>(
 }
 
 /**
+ * The `ion` section is optional. A missing section, missing key, or blank
+ * token means token-free mode; anything else must be a string.
+ */
+function validateIon(input: unknown): IonConfig {
+  if (input === undefined) return { token: null };
+  if (!isRecord(input)) {
+    throw new SimConfigError('"ion" must be an object');
+  }
+  const token = input['token'];
+  if (token === undefined || token === null) return { token: null };
+  if (typeof token !== 'string') {
+    throw new SimConfigError('"ion.token" must be a string');
+  }
+  const trimmed = token.trim();
+  return { token: trimmed.length > 0 ? trimmed : null };
+}
+
+/**
  * Validates an arbitrary value (e.g. parsed JSON) as a complete SimConfig.
- * Every section and key must be present, and every value a finite number
- * inside its allowed range. Heading is normalised so 360 becomes 0.
+ * Every numeric section and key must be present, and every value a finite
+ * number inside its allowed range. Heading is normalised so 360 becomes 0.
  */
 export function validateSimConfig(input: unknown): SimConfig {
   if (!isRecord(input)) {
     throw new SimConfigError('expected an object');
   }
-  const config = {} as Record<keyof SimConfig, Record<string, number>>;
+  const config = {} as Record<NumericSection, Record<string, number>>;
   for (const section of SECTION_NAMES) {
     const ranges: Record<string, Range> = SECTION_RANGES[section];
     config[section] = validateSection(section, input[section], ranges);
   }
-  const result = config as unknown as SimConfig;
+  const result = { ion: validateIon(input['ion']), ...config } as unknown as SimConfig;
   result.start.heading = result.start.heading % 360;
   if (result.aerodynamics.zeroLiftAngle <= result.aerodynamics.stallAngle) {
     throw new SimConfigError('"aerodynamics.zeroLiftAngle" must be greater than "stallAngle"');

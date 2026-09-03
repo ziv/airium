@@ -7,6 +7,7 @@ import {
   type FlightModel,
   computeForces,
   createInitialState,
+  easeRate,
   liftCoefficient,
   NEUTRAL_CONTROLS,
   step,
@@ -15,8 +16,15 @@ import {
 import { type StartConfig, validateSimConfig } from './sim-config';
 import startJson from '../start.config.json';
 
-/** The shipped configuration is the reference flight model for these tests. */
-const model: FlightModel = validateSimConfig(startJson);
+/**
+ * The shipped configuration is the reference flight model for these tests,
+ * with instant control response so rate tests are exact.
+ */
+const shipped = validateSimConfig(startJson);
+const model: FlightModel = {
+  ...shipped,
+  controls: { ...shipped.controls, responseTime: 0, releaseTime: 0 },
+};
 const { aircraft, aerodynamics: aero, environment: env } = model;
 const G = env.gravity;
 
@@ -135,6 +143,52 @@ describe('step', () => {
       s = step(s, { ...NEUTRAL_CONTROLS, roll: 1 }, fast, GROUND_HEIGHT, DT);
     }
     expect(hprFromAttitude(s.attitude).roll).toBeCloseTo(toRadians(60), 1);
+  });
+
+  it('builds the roll rate up gradually with a response time, per config', () => {
+    const smooth: FlightModel = {
+      ...model,
+      controls: { ...model.controls, responseTime: 0.5, releaseTime: 0.5 },
+    };
+    let s = createInitialState({ ...start, speed: 50 }, GROUND_HEIGHT);
+    const max = toRadians(smooth.controls.rollRate);
+    const rateAt: number[] = [];
+    for (let i = 0; i < Math.round(1.5 / DT); i++) {
+      s = step(s, { ...NEUTRAL_CONTROLS, roll: 1 }, smooth, GROUND_HEIGHT, DT);
+      rateAt.push(s.bodyRates.roll);
+    }
+    const at = (t: number) => rateAt[Math.round(t / DT) - 1] ?? 0;
+    expect(at(0.1)).toBeGreaterThan(0);
+    expect(at(0.1)).toBeLessThan(0.25 * max);
+    expect(at(0.5)).toBeCloseTo(max * (1 - Math.exp(-1)), 1);
+    expect(at(1.5)).toBeCloseTo(max * (1 - Math.exp(-3)), 1);
+    // Rate only ever increases while the key is held.
+    for (let i = 1; i < rateAt.length; i++)
+      expect(rateAt[i]).toBeGreaterThanOrEqual(rateAt[i - 1]!);
+  });
+
+  it('keeps rolling after the key is released and decays with the release time', () => {
+    const smooth: FlightModel = {
+      ...model,
+      controls: { ...model.controls, responseTime: 0.2, releaseTime: 1 },
+    };
+    let s = createInitialState({ ...start, speed: 50 }, GROUND_HEIGHT);
+    for (let i = 0; i < Math.round(2 / DT); i++) {
+      s = step(s, { ...NEUTRAL_CONTROLS, roll: 1 }, smooth, GROUND_HEIGHT, DT);
+    }
+    const rollAtRelease = hprFromAttitude(s.attitude).roll;
+    const rateAtRelease = s.bodyRates.roll;
+    for (let i = 0; i < Math.round(1 / DT); i++) {
+      s = step(s, NEUTRAL_CONTROLS, smooth, GROUND_HEIGHT, DT);
+    }
+    expect(hprFromAttitude(s.attitude).roll).toBeGreaterThan(rollAtRelease + toRadians(10));
+    expect(s.bodyRates.roll).toBeGreaterThan(0);
+    expect(s.bodyRates.roll).toBeCloseTo(rateAtRelease * Math.exp(-1), 1);
+  });
+
+  it('easeRate is instant when the time constants are zero', () => {
+    expect(easeRate(0, 1, 0, 0, DT)).toBe(1);
+    expect(easeRate(1, 0, 0, 0, DT)).toBe(0);
   });
 
   it('uses gravity from the config', () => {

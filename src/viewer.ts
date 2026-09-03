@@ -7,7 +7,6 @@ import {
   type TerrainProvider,
   Viewer,
 } from 'cesium';
-import type { AppConfig } from './config';
 
 export interface World {
   viewer: Viewer;
@@ -26,11 +25,11 @@ export interface World {
  * widgets and mouse camera controls are disabled so only the simulation moves
  * the camera.
  */
-export function createViewer(container: HTMLElement, config: AppConfig): World {
-  const tokenFree = config.ionToken === null;
+export function createViewer(container: HTMLElement, ionToken: string | null): World {
+  const tokenFree = ionToken === null;
 
-  if (!tokenFree) {
-    Ion.defaultAccessToken = config.ionToken as string;
+  if (ionToken !== null) {
+    Ion.defaultAccessToken = ionToken;
   }
 
   const baseOptions: Viewer.ConstructorOptions = {
@@ -60,7 +59,7 @@ export function createViewer(container: HTMLElement, config: AppConfig): World {
     });
     terrainReady = Promise.resolve(terrainProvider);
     console.info(
-      '[airium] VITE_CESIUM_ION_TOKEN not set; using OpenStreetMap imagery and ellipsoid terrain.',
+      '[airium] no ion.token in start.config.json; using OpenStreetMap imagery and ellipsoid terrain.',
     );
   } else {
     const terrain = Terrain.fromWorldTerrain();

@@ -18,10 +18,27 @@ const aircraft = {
 const { aerodynamics, controls, ground, environment, simulation } = startJson;
 const rest = { aerodynamics, controls, ground, environment, simulation };
 const valid = { start, aircraft, ...rest };
+const validWithIon = { ...valid, ion: { token: null } };
 
 describe('validateSimConfig', () => {
-  it('accepts a complete valid config', () => {
-    expect(validateSimConfig(valid)).toEqual(valid);
+  it('accepts a complete valid config, defaulting to token-free ion', () => {
+    expect(validateSimConfig(valid)).toEqual(validWithIon);
+  });
+
+  it('reads and trims the ion token, treating blank as token-free', () => {
+    expect(validateSimConfig({ ...valid, ion: { token: '  abc.def ' } }).ion).toEqual({
+      token: 'abc.def',
+    });
+    expect(validateSimConfig({ ...valid, ion: { token: '   ' } }).ion).toEqual({ token: null });
+    expect(validateSimConfig({ ...valid, ion: {} }).ion).toEqual({ token: null });
+    expect(validateSimConfig({ ...valid, ion: { token: null } }).ion).toEqual({ token: null });
+  });
+
+  it('rejects a malformed ion section', () => {
+    expect(() => validateSimConfig({ ...valid, ion: 'tok' })).toThrow(/"ion" must be an object/);
+    expect(() => validateSimConfig({ ...valid, ion: { token: 42 } })).toThrow(
+      /"ion.token" must be a string/,
+    );
   });
 
   it('accepts the shipped start.config.json', () => {
@@ -84,6 +101,9 @@ describe('validateSimConfig', () => {
     expect(() =>
       validateSimConfig({ ...valid, simulation: { ...simulation, physicsHz: 0 } }),
     ).toThrow(/"simulation.physicsHz"/);
+    expect(() =>
+      validateSimConfig({ ...valid, controls: { ...controls, responseTime: -1 } }),
+    ).toThrow(/"controls.responseTime"/);
   });
 
   it('requires the zero-lift angle to be beyond the stall angle', () => {
@@ -126,12 +146,12 @@ describe('parseStartOverrides', () => {
 
 describe('resolveSimConfig', () => {
   it('returns the base config when there are no overrides', () => {
-    expect(resolveSimConfig(valid)).toEqual(valid);
+    expect(resolveSimConfig(valid)).toEqual(validWithIon);
   });
 
   it('applies start overrides on top of the base config', () => {
     expect(resolveSimConfig(valid, '?height=900&fov=45')).toEqual({
-      ...valid,
+      ...validWithIon,
       start: { ...start, height: 900, fov: 45 },
     });
   });

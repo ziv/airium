@@ -1,10 +1,13 @@
 {
+  "ion": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6InRkVHBUbVg2Z2JCLTRvZkwiLCJqdGkiOiJkMTJmMGMyNS0yYzg3LTQ0ODktYjQ1MS0zYWM4ZjVkMTBiM2MiLCJpZCI6MTg4MjAwLCJzdWIiOiJ6aXYiLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoieml2LmdpdGh1Yi5pbyIsImlhdCI6MTc4ODQ0ODg5Mn0.6PX1oQos1cQSz6pTuPUsHdj3apZLL5U4PbFNZJLqrDg"
+  },
   "start": {
     "lat": 47.2692,
     "lon": 11.2,
     "height": 2000,
     "heading": 90,
-    "speed": 200,
+    "speed": 0,
     "fov": 60
   },
   "aircraft": {
@@ -28,6 +31,8 @@
     "rollRate": 60,
     "pitchRate": 30,
     "yawRate": 20,
+    "responseTime": 0.6,
+    "releaseTime": 0.8,
     "throttleStep": 0.05
   },
   "ground": {

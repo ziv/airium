@@ -6,21 +6,22 @@ A flight simulator using [Cesium.js](https://cesium.com/platform/cesiumjs/) as t
 
 ```sh
 npm install
-cp .env.example .env   # optional: add your Cesium Ion token
 npm run dev
 ```
 
-Without an Ion token the globe renders with OpenStreetMap imagery and no terrain.
+The Cesium Ion token is read from `ion.token` in `src/start.config.json`. Ion tokens can be
+restricted to specific origins (e.g. GitHub Pages and localhost), which is what makes committing
+one acceptable. Without a token the globe renders with OpenStreetMap imagery and no terrain.
 
 ## Flying
 
-| Key       | Action                                 |
-| --------- | -------------------------------------- |
-| `←` / `→` | Roll left / right (60°/s while held)   |
-| `↓` / `↑` | Nose up / nose down (30°/s while held) |
-| `[` / `]` | Yaw left / right (20°/s while held)    |
-| `+` / `-` | Throttle up / down in 5 % steps        |
-| `R`       | Reset to the start configuration       |
+| Key       | Action                           |
+| --------- | -------------------------------- |
+| `←` / `→` | Roll left / right                |
+| `↓` / `↑` | Nose up / nose down              |
+| `[` / `]` | Yaw left / right                 |
+| `+` / `-` | Throttle up / down in 5 % steps  |
+| `R`       | Reset to the start configuration |
 
 The HUD in the top-left shows throttle, attitude, heading, angle of attack, airspeed, vertical
 speed, height above ground, altitude and position. A hard impact freezes the sim with **CRASHED**;
@@ -28,7 +29,8 @@ press `R`.
 
 ## Configuration
 
-`src/start.config.json` has two sections. The `start` section defines where you begin:
+`src/start.config.json` holds all settings. `ion.token` is the Cesium Ion access token (optional).
+The `start` section defines where you begin:
 
 | Key       | Unit                            | Notes       |
 | --------- | ------------------------------- | ----------- |
@@ -52,13 +54,13 @@ The `aircraft` section defines the flight model:
 The remaining sections tune the flight model; nothing in the physics is hard-coded.
 Angles are degrees, rates are degrees per second.
 
-| Section        | Keys                                                                                                                                                     |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `aerodynamics` | `liftSlope` (per rad), `stallAngle`, `zeroLiftAngle`, `inducedDragFactor`, `trimLoadFactor`, `minAeroSpeed`, `stabilityRatePerSpeed`, `stabilityMaxRate` |
-| `controls`     | `rollRate`, `pitchRate`, `yawRate`, `throttleStep` (fraction per key press)                                                                              |
-| `ground`       | `maxLandingSinkRate`, `maxLandingRoll`, `minLandingPitch`, `rollingFriction`, `maxGroundPitch`, `liftoffHeight`                                          |
-| `environment`  | `gravity`, `seaLevelAirDensity`, `densityScaleHeight`, `earthRadius`                                                                                     |
-| `simulation`   | `physicsHz` (fixed physics steps per second), `maxFrameSeconds` (longest frame gap simulated)                                                            |
+| Section        | Keys                                                                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aerodynamics` | `liftSlope` (per rad), `stallAngle`, `zeroLiftAngle`, `inducedDragFactor`, `trimLoadFactor`, `minAeroSpeed`, `stabilityRatePerSpeed`, `stabilityMaxRate`    |
+| `controls`     | `rollRate`, `pitchRate`, `yawRate` (max deg/s), `responseTime`, `releaseTime` (s, how rates build up and die away), `throttleStep` (fraction per key press) |
+| `ground`       | `maxLandingSinkRate`, `maxLandingRoll`, `minLandingPitch`, `rollingFriction`, `maxGroundPitch`, `liftoffHeight`                                             |
+| `environment`  | `gravity`, `seaLevelAirDensity`, `densityScaleHeight`, `earthRadius`                                                                                        |
+| `simulation`   | `physicsHz` (fixed physics steps per second), `maxFrameSeconds` (longest frame gap simulated)                                                               |
 
 Any `start` key can be overridden from the URL for quick experiments:
 

@@ -1,6 +1,5 @@
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './style.css';
-import { loadConfig } from './config';
 import { Hud } from './hud';
 import { KeyboardInput } from './input';
 import { loadedGroundHeight, placeCamera, sampleGroundHeight, setCameraFov } from './sim/camera';
@@ -15,13 +14,12 @@ async function main(): Promise<void> {
     throw new Error('Missing #cesiumContainer element in index.html');
   }
 
-  const config = loadConfig(import.meta.env);
   const sim = resolveSimConfig(startJson, window.location.search);
   const { start } = sim;
   const fixedDt = 1 / sim.simulation.physicsHz;
   const maxFrameDt = sim.simulation.maxFrameSeconds;
 
-  const { viewer, terrainReady } = createViewer(container, config);
+  const { viewer, terrainReady } = createViewer(container, sim.ion.token);
   setCameraFov(viewer, start.fov);
 
   const input = new KeyboardInput(window, sim.controls.throttleStep);
@@ -35,7 +33,11 @@ async function main(): Promise<void> {
   const startGroundHeight = await sampleGroundHeight(provider, start.lat, start.lon);
   state = createInitialState(start, startGroundHeight);
   placeCamera(viewer, state);
-  console.info('[airium] config', { ...sim, startGroundHeight });
+  console.info('[airium] config', {
+    ...sim,
+    ion: { token: sim.ion.token ? '(set)' : null },
+    startGroundHeight,
+  });
 
   let last = performance.now();
   let accumulator = 0;

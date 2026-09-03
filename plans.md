@@ -16,8 +16,9 @@ Decisions (clarified 2026-09-02):
 - Scope: Cesium.js is wired in from the start and renders a full-screen globe in the browser.
 - Package manager: npm (node v22, lockfile is `package-lock.json`).
 - Code quality: ESLint (typescript-eslint) and Prettier, exposed as `npm run lint` and `npm run format`.
-- Cesium Ion token: read from `VITE_CESIUM_ION_TOKEN` in a gitignored `.env` or `.env.local` file; a `.env.example`
-  is committed. If the token is missing the app falls back to token-free OpenStreetMap imagery and
+- Cesium Ion token: originally read from a gitignored `.env` file; since 2026-09-03 it is `ion.token`
+  in `src/start.config.json` (an origin-restricted token valid only on GitHub Pages and localhost).
+  If the token is missing or blank the app falls back to token-free OpenStreetMap imagery and
   ellipsoid terrain so the globe still renders.
 - Cesium static assets are served via `vite-plugin-cesium`.
 
@@ -93,7 +94,9 @@ Decisions (2026-09-02):
 - Config gains an `aircraft` section: `weight` (kg), `wingArea` (m², added because the forces need
   it), `liftCoefficient` (CL at zero AoA), `dragCoefficient` (CD0), `maxThrust` (N). The start
   parameters moved under `start`. Defaults are a Cessna-172-like light aircraft.
-- Controls are rates while held: roll 60°/s, pitch 30°/s, yaw 20°/s; release stops the rotation.
+- Controls command rotation rates (max roll 60°/s, pitch 30°/s, yaw 20°/s) that build up while a
+  key is held and die away after release (`controls.responseTime` / `releaseTime`), so inputs
+  feel smooth rather than abrupt.
   `+`/`-` step throttle by 5 % and it stays put. Flight-sim convention: arrow down = nose up.
   `R` resets to the start configuration.
 - Ground: below 4 m/s sink, under 20° bank and not nose-down, touchdown puts the aircraft on its
