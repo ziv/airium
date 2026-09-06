@@ -201,6 +201,30 @@ export interface CameraConfig {
   nearPlane: number;
 }
 
+export type Units = 'metric' | 'imperial';
+
+/** Graphical HUD settings. */
+export interface HudConfig {
+  /** metric: m/s, m; imperial: knots, feet, ft/min. */
+  units: Units;
+  /** CSS hex colour of the symbology, e.g. "#9cff9c". */
+  color: string;
+  /** Opacity of the symbology, 0.1..1. */
+  brightness: number;
+  /** Base font size in CSS pixels. */
+  fontSize: number;
+  /** Show the radar altitude when below this height above ground, metres. */
+  radarAltitudeBelow: number;
+  /** PULL UP when the predicted time to ground is under this many seconds. */
+  pullUpSeconds: number;
+  /** Warning flash rate. */
+  flashHz: number;
+  /** Degrees between pitch ladder lines. */
+  ladderSpacing: number;
+  /** Ladder lines are drawn within this many degrees of the current pitch. */
+  ladderRange: number;
+}
+
 /** Cesium Ion access. */
 export interface IonConfig {
   /** Ion access token, or null to run token-free (OpenStreetMap imagery, no terrain). */
@@ -216,6 +240,7 @@ export interface SimConfig {
   graphics: GraphicsConfig;
   input: InputConfig;
   camera: CameraConfig;
+  hud: HudConfig;
 }
 
 const START: SectionSpec<StartConfig> = {
@@ -323,6 +348,20 @@ const CAMERA: SectionSpec<CameraConfig> = {
   nearPlane: { min: 0.01, max: 1_000 },
 };
 
+const HUD: SectionSpec<HudConfig> = {
+  units: { type: 'enum', values: ['metric', 'imperial'] },
+  color: { type: 'string' },
+  brightness: { min: 0.1, max: 1 },
+  fontSize: { min: 8, max: 40 },
+  radarAltitudeBelow: { min: 0, max: 20_000 },
+  pullUpSeconds: { min: 0, max: 60 },
+  flashHz: { min: 0.5, max: 10 },
+  ladderSpacing: { min: 1, max: 30 },
+  ladderRange: { min: 5, max: 90 },
+};
+
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
 export const START_CONFIG_KEYS = Object.keys(START) as (keyof StartConfig)[];
 
 /**
@@ -426,7 +465,11 @@ export function validateSimConfig(input: unknown): SimConfig {
     graphics: validateGraphics(input['graphics']),
     input: validateInput(input['input']),
     camera: validateSection<CameraConfig>('camera', input['camera'], CAMERA),
+    hud: validateSection<HudConfig>('hud', input['hud'], HUD),
   };
+  if (!HEX_COLOR.test(result.hud.color)) {
+    throw new ConfigError('"hud.color" must be a hex colour like "#9cff9c"');
+  }
   result.start.heading = result.start.heading % 360;
   if (result.start.aircraft.trim() === '') {
     throw new ConfigError('"start.aircraft" must name an aircraft type');
@@ -442,15 +485,16 @@ export function validateSimConfig(input: unknown): SimConfig {
   return result;
 }
 
-/** Start and graphics overrides that can come from the URL. */
+/** Start, graphics and HUD overrides that can come from the URL. */
 export interface Overrides {
   start: Partial<StartConfig>;
   graphics: Partial<Pick<GraphicsConfig, 'preset' | 'osmBuildings'>>;
+  hud: Partial<Pick<HudConfig, 'units'>>;
 }
 
 /**
  * Reads optional overrides from a URL query string, e.g. `?lat=32&lon=34.8`,
- * `?aircraft=trainer`, `?graphics=low`, `?buildings=1`.
+ * `?aircraft=trainer`, `?graphics=low`, `?buildings=1`, `?units=imperial`.
  * Unknown keys are ignored; known numeric keys with non-numeric values are rejected.
  */
 export function parseOverrides(search: string): Overrides {
@@ -477,7 +521,11 @@ export function parseOverrides(search: string): Overrides {
   const buildings = params.get('buildings');
   if (buildings !== null) graphics.osmBuildings = buildings === '1' || buildings === 'true';
 
-  return { start, graphics };
+  const hud: Overrides['hud'] = {};
+  const units = params.get('units');
+  if (units !== null) hud.units = units as Units;
+
+  return { start, graphics, hud };
 }
 
 /** Combines the base config with URL overrides and validates the result. */
@@ -488,5 +536,6 @@ export function resolveSimConfig(base: unknown, search = ''): SimConfig {
     ...baseConfig,
     start: { ...baseConfig.start, ...overrides.start },
     graphics: { ...baseConfig.graphics, ...overrides.graphics },
+    hud: { ...baseConfig.hud, ...overrides.hud },
   });
 }

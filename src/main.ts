@@ -1,7 +1,9 @@
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './style.css';
 import { getAircraftType } from './aircraft';
-import { Hud } from './hud';
+import { DebugPanel } from './hud/debug-panel';
+import { HudCanvas } from './hud/hud-canvas';
+import { buildHudData } from './hud/hud-data';
 import { InputManager } from './input/controls';
 import { formatLegend, legendEntries } from './input/legend';
 import { OwnAircraft } from './render/aircraft-model';
@@ -57,9 +59,14 @@ async function main(): Promise<void> {
   const own = new OwnAircraft(viewer, aircraft.model);
   own.visible = rig.showsOwnAircraft;
   const buildings = new Buildings(viewer, sim.graphics.osmBuildings, sim.ion.token !== null);
-  const hud = new Hud(document.body, formatLegend(legendEntries(sim.input.keys)));
-  let debug = false;
+  const hud = new HudCanvas(document.body, sim.hud, window);
+  const debugPanel = new DebugPanel(document.body, formatLegend(legendEntries(sim.input.keys)));
+  let units = sim.hud.units;
   let fps = 0;
+  let tilesQueued = 0;
+  viewer.scene.globe.tileLoadProgressEvent.addEventListener((queued: number) => {
+    tilesQueued = queued;
+  });
 
   const hudInfo = () => ({
     aircraftName: aircraft.name,
@@ -68,10 +75,30 @@ async function main(): Promise<void> {
     timeScale: clock.timeScale,
     devices: input.devices(),
     buildings: buildings.enabled,
-    debug,
     fps,
     tilesLoaded: viewer.scene.globe.tilesLoaded,
+    tilesQueued,
+    units,
   });
+
+  /** Draws both overlays from the state shown on screen. */
+  const drawHud = (shown: typeof state, controls: { brakes: boolean }) => {
+    const forces = computeForces(shown, model);
+    const warnings = warningsFor(shown, forces, model);
+    hud.draw(
+      buildHudData(shown, forces, warnings, model, sim.hud, {
+        pose: rig.pose(),
+        cameraMode: rig.mode,
+        paused: clock.paused,
+        timeScale: clock.timeScale,
+        units,
+        brakes: controls.brakes,
+        time: performance.now() / 1000,
+      }),
+      rig.fov,
+    );
+    debugPanel.update(shown, forces, warnings, hudInfo());
+  };
 
   // Provisional placement on the ellipsoid while terrain loads.
   let state = createInitialState(start, 0, aircraft);
@@ -79,6 +106,7 @@ async function main(): Promise<void> {
   let previous = state;
   own.update(state);
   rig.update(state, 0, input.mouse.look(), input.mouse.takeOrbit());
+  hud.visible = true;
 
   const provider = await terrainReady;
   let startGroundHeight = await sampleGroundHeight(provider, start.lat, start.lon);
@@ -150,8 +178,11 @@ async function main(): Promise<void> {
         case 'buildings':
           buildings.toggle();
           break;
+        case 'units':
+          units = units === 'metric' ? 'imperial' : 'metric';
+          break;
         case 'debug':
-          debug = !debug;
+          debugPanel.toggle();
           break;
       }
     }
@@ -169,8 +200,7 @@ async function main(): Promise<void> {
         clock.reset();
         own.update(state);
         rig.update(state, dt, input.mouse.look(), input.mouse.takeOrbit());
-        const forces = computeForces(state, model);
-        hud.update(state, forces, warningsFor(state, forces, model), hudInfo());
+        drawHud(state, { brakes: false });
         return;
       }
       console.info('[airium] terrain settled, ground at start:', startGroundHeight);
@@ -189,8 +219,7 @@ async function main(): Promise<void> {
     const shown = interpolateState(previous, state, clock.alpha);
     own.update(shown);
     rig.update(shown, dt, input.mouse.look(), input.mouse.takeOrbit());
-    const forces = computeForces(state, model);
-    hud.update(state, forces, warningsFor(state, forces, model), hudInfo());
+    drawHud(shown, controls);
   });
 }
 

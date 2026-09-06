@@ -43,11 +43,16 @@ is a small input and a long press a full one. The defaults are:
 A gamepad works too: stick axes for roll/pitch/yaw, optional throttle axis, buttons for
 throttle up/down, afterburner, gear, brakes, airbrake, camera, reset and pause (`input.gamepad`).
 
-The HUD in the top-left shows throttle and afterburner, fuel, attitude, heading, angle of attack,
-load factor (current and peak), airspeed, Mach, vertical speed, height above ground, altitude and
-the gear/airbrake state, plus STALL / OVER-G / OVERSPEED / GEAR / ENGINE OUT / BINGO FUEL warnings.
-A hard landing, a wing strike, a nose-first impact or a gear-up landing freezes the sim with
-**CRASHED** and the reason; press `R`.
+The HUD is a fighter-style overlay: heading tape at the top, airspeed tape (knots or m/s) on
+the left with Mach, g, peak g and angle of attack below it, altitude tape (feet or metres) on the
+right with radar altitude and vertical speed, a pitch ladder that rolls with the aircraft, the
+boresight cross, the flight-path marker (with an AoA bracket beside it, clamped to the edge with
+an arrow when off screen), throttle/afterburner and fuel at the bottom left, GEAR / AIRBRAKE /
+BRAKES indicators at the bottom, and flashing STALL / OVER-G / OVERSPEED / GEAR / PULL UP /
+ENGINE OUT / BINGO FUEL warnings. World-referenced symbols are projected through the current
+camera, so they stay correct in the chase and orbit views too. A hard landing, a wing strike,
+a nose-first impact or a gear-up landing freezes the sim with **CRASHED** and the reason;
+press `R`. The backtick key opens the debug panel with every raw number, fps and the key legend.
 
 ## Configuration
 
@@ -86,10 +91,10 @@ scale with dynamic pressure up to `referenceDynamicPressure`. Position is integr
 in a local East-North-Up frame (fine below about 80° latitude).
 
 Any `start` key can be overridden from the URL for quick experiments, along with the graphics
-preset and buildings:
+preset, buildings and HUD units:
 
 ```
-http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&speed=250&aircraft=trainer&graphics=low&buildings=1
+http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&speed=250&aircraft=trainer&graphics=low&buildings=1&units=metric
 ```
 
 ## Deploying to GitHub Pages

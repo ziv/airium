@@ -9,7 +9,7 @@ import {
 } from './sim-config';
 
 const valid = validateSimConfig(startJson);
-const { start, simulation, graphics, input, camera } = valid;
+const { start, simulation, graphics, input, camera, hud } = valid;
 
 function without(obj: object, key: string): Record<string, unknown> {
   const copy: Record<string, unknown> = { ...obj };
@@ -117,6 +117,18 @@ describe('validateSimConfig', () => {
     ).toThrow(/orbitMinDistance/);
   });
 
+  it('validates the hud section', () => {
+    expect(() => validateSimConfig({ ...valid, hud: { ...hud, units: 'nautical' } })).toThrow(
+      /"hud.units" must be one of metric, imperial/,
+    );
+    expect(() => validateSimConfig({ ...valid, hud: { ...hud, color: 'green' } })).toThrow(
+      /"hud.color" must be a hex colour/,
+    );
+    expect(() => validateSimConfig({ ...valid, hud: { ...hud, brightness: 2 } })).toThrow(
+      /"hud.brightness"/,
+    );
+  });
+
   it('validates gamepad and mouse sections', () => {
     const gamepad = { ...input.gamepad, axes: { ...input.gamepad.axes, roll: 40 } };
     expect(() => validateSimConfig({ ...valid, input: { ...input, gamepad } })).toThrow(
@@ -162,10 +174,12 @@ describe('parseOverrides', () => {
     ).toEqual({
       start: { lat: 1.5, height: 200, aircraft: 'trainer', time: '2026-06-21T12:00:00Z' },
       graphics: { preset: 'low', osmBuildings: true },
+      hud: {},
     });
     expect(parseOverrides('?buildings=0').graphics).toEqual({ osmBuildings: false });
-    expect(parseOverrides('')).toEqual({ start: {}, graphics: {} });
-    expect(parseOverrides('?foo=1')).toEqual({ start: {}, graphics: {} });
+    expect(parseOverrides('?units=metric').hud).toEqual({ units: 'metric' });
+    expect(parseOverrides('')).toEqual({ start: {}, graphics: {}, hud: {} });
+    expect(parseOverrides('?foo=1')).toEqual({ start: {}, graphics: {}, hud: {} });
   });
 
   it('rejects non-numeric values for numeric keys', () => {
@@ -181,6 +195,8 @@ describe('resolveSimConfig', () => {
     expect(resolved.start.lon).toBe(start.lon);
     expect(resolved.start.aircraft).toBe('trainer');
     expect(resolved.graphics.preset).toBe('high');
+    expect(resolveSimConfig(startJson, '?units=metric').hud.units).toBe('metric');
+    expect(() => resolveSimConfig(startJson, '?units=furlongs')).toThrow(/"hud.units"/);
     expect(() => resolveSimConfig(startJson, '?lat=200')).toThrow(/"start.lat"/);
     expect(() => resolveSimConfig(startJson, '?graphics=ultra')).toThrow(/"graphics.preset"/);
   });
