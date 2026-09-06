@@ -4,6 +4,9 @@ import { getAircraftType } from './aircraft';
 import { DebugPanel } from './hud/debug-panel';
 import { HudCanvas } from './hud/hud-canvas';
 import { buildHudData } from './hud/hud-data';
+import { buildCombatHud } from './hud/combat-data';
+import { WeaponAudio } from './weapons/audio';
+import { keyLabel } from './input/actions';
 import { InputManager } from './input/controls';
 import { formatLegend, legendEntries } from './input/legend';
 import { getMission } from './missions';
@@ -63,6 +66,7 @@ async function main(): Promise<void> {
   });
   input.reset(startsOnGround);
   const clock = new SimClock(sim.simulation);
+  const weaponAudio = new WeaponAudio(window);
   const rig = new CameraRig(viewer, sim.camera, {
     forward: aircraft.model.cockpitForward,
     up: aircraft.model.cockpitUp,
@@ -142,8 +146,9 @@ async function main(): Promise<void> {
 
   /** Draws both overlays from the state shown on screen. */
   const drawHud = (shown: AircraftState, controls: { brakes: boolean }) => {
-    const forces = computeForces(shown, model);
-    const warnings = warningsFor(shown, forces, model);
+    const forces = computeForces(shown, player.model);
+    const warnings = warningsFor(shown, forces, player.model);
+    const combat = buildCombatHud(player, world, terrain);
     const firstWaypoint = world.waypoints()[0];
     hud.draw(
       buildHudData(shown, forces, warnings, model, sim.hud, {
@@ -154,6 +159,9 @@ async function main(): Promise<void> {
         units,
         brakes: controls.brakes,
         time: performance.now() / 1000,
+        combat,
+        target: combat.target,
+        restartKey: keyLabel(sim.input.keys.reset[0] ?? 'R'),
         ...(firstWaypoint
           ? { waypointHeading: toDegrees(bearing(shown, firstWaypoint, earthRadius)) }
           : {}),
@@ -202,6 +210,7 @@ async function main(): Promise<void> {
     state = player.state;
     previous = state;
     clock.reset();
+    clock.paused = false;
     rig.setMode(rig.mode);
   };
 
@@ -222,6 +231,16 @@ async function main(): Promise<void> {
     input.update(dt);
     for (const press of input.takePresses()) {
       switch (press) {
+        case 'selectWeapon':
+        case 'selectGun':
+        case 'selectIR':
+        case 'selectRadar':
+        case 'selectAG':
+        case 'target':
+        case 'lock':
+        case 'countermeasures':
+          if (!clock.paused && player.alive && settled) world.combat.command(PLAYER_ID, press);
+          break;
         case 'reset':
           reset();
           break;
@@ -272,6 +291,7 @@ async function main(): Promise<void> {
       }
       settled = loaded !== undefined || now >= settleDeadline;
       if (!settled) {
+        input.consumeFirePress();
         clock.reset();
         own.update(state);
         rig.update(state, dt, input.mouse.look(), input.mouse.takeOrbit());
@@ -283,16 +303,23 @@ async function main(): Promise<void> {
     }
 
     const controls = input.controls();
-    const steps = clock.advance(dt);
+    if (clock.paused || !player.alive) input.consumeFirePress();
+    const steps = player.alive ? clock.advance(dt) : 0;
     for (let i = 0; i < steps; i++) {
       previous = state;
       world.step(clock.fixedDt, controls, terrain);
+      input.consumeFirePress();
       state = player.state;
+      if (!player.alive) {
+        previous = state;
+        break;
+      }
     }
+    weaponAudio.play(world.combat.takeEvents(), PLAYER_ID);
 
     // Draw a fraction of a step behind so motion is smooth regardless of how
     // many physics steps this frame happened to contain.
-    const shown = interpolateState(previous, state, clock.alpha);
+    const shown = player.alive ? interpolateState(previous, state, clock.alpha) : state;
     own.update(shown);
     entities.update(world, PLAYER_ID, earthRadius);
     rig.update(shown, dt, input.mouse.look(), input.mouse.takeOrbit());

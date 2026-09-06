@@ -20,25 +20,32 @@ trainer. Keys are configured in `input.keys` of `src/start.config.json` (the on-
 generated from them). A held key ramps the stick up over `input.keyboard.axisRampTime`, so a tap
 is a small input and a long press a full one. The defaults are:
 
-| Key               | Action                                                   |
-| ----------------- | -------------------------------------------------------- |
-| `←` / `→`         | Roll left / right                                        |
-| `↓` / `↑`         | Nose up / nose down (fly-by-wire: the stick commands g)  |
-| `[` / `]`         | Yaw left / right (nose-wheel steering on the ground)     |
-| `+` / `-`         | Throttle in 5 % steps; past 100 % lights the afterburner |
-| `A`               | Afterburner on/off                                       |
-| `G`               | Landing gear up/down                                     |
-| `S`               | Airbrake in/out                                          |
-| `B` (hold)        | Wheel brakes                                             |
-| `C`, `F1`–`F4`    | Next camera; cockpit / chase / orbit / fly-by            |
-| Right drag        | Look around in the cockpit (returns to the boresight)    |
-| Left drag / wheel | Rotate / zoom the orbit camera                           |
-| `M`               | Mouse flight (pointer position = stick) on/off           |
-| `P`               | Pause                                                    |
-| `,` / `.`         | Time scale slower / faster                               |
-| `O`               | Cesium OSM Buildings on/off (needs an Ion token)         |
-| `` ` ``           | Debug block (position, coefficients, fps, tiles) on/off  |
-| `R`               | Reset to the start configuration                         |
+| Key               | Action                                                           |
+| ----------------- | ---------------------------------------------------------------- |
+| `←` / `→`         | Roll left / right                                                |
+| `↓` / `↑`         | Nose up / nose down (fly-by-wire: the stick commands g)          |
+| `[` / `]`         | Yaw left / right (nose-wheel steering on the ground)             |
+| `+` / `-`         | Throttle in 5 % steps; past 100 % lights the afterburner         |
+| `A`               | Afterburner on/off                                               |
+| `G`               | Landing gear up/down                                             |
+| `S`               | Airbrake in/out                                                  |
+| `B` (hold)        | Wheel brakes                                                     |
+| `C`, `F1`–`F4`    | Next camera; cockpit / chase / orbit / fly-by                    |
+| Right drag        | Look around in the cockpit (returns to the boresight)            |
+| Left drag / wheel | Rotate / zoom the orbit camera                                   |
+| `M`               | Mouse flight (pointer position = stick) on/off                   |
+| `P`               | Pause                                                            |
+| `,` / `.`         | Time scale slower / faster                                       |
+| `O`               | Cesium OSM Buildings on/off (needs an Ion token)                 |
+| `` ` ``           | Debug block (position, coefficients, fps, tiles) on/off          |
+| `R`               | Reset to the start configuration                                 |
+| `Space` / trigger | Fire cannon/rockets while held; release a missile/bomb per press |
+| `Enter`           | Cycle gun → IR → radar → bomb → rocket                           |
+| `1` / `2` / `3`   | Select gun / IR missile / radar missile                          |
+| `4`               | Select bombs; press again for rockets                            |
+| `T` / `Tab`       | Cycle hostile targets, nearest first                             |
+| `L`               | Lock/unlock the selected target                                  |
+| `X`               | Release one chaff/flare packet                                   |
 
 A gamepad works too: stick axes for roll/pitch/yaw, optional throttle axis, buttons for
 throttle up/down, afterburner, gear, brakes, airbrake, camera, reset and pause (`input.gamepad`).
@@ -78,6 +85,52 @@ faction-coloured points (red hostile, blue friendly). Wrecks disappear after
 
 Unit types live in `src/units/*.json` (`name`, `kind`, `radius`, `health`, `speed`, `model`) and
 are registered in `src/units/index.ts`.
+
+## Weapons and damage (Milestone 7)
+
+Open `?mission=weapons-range&time=2026-09-06T12:00:00Z` for two unarmed drones ahead of the
+default airborne start and a ground range farther east. The existing coastal patrol also
+supports all weapons. Set throttle before practising; the default flight starts at idle.
+
+- **Gun:** select `1`, designate a drone with `T`, and bring the boresight onto the LCOS
+  lead cue. Hold Space for the 100-round/s cannon. It carries 510 rounds, adds aircraft
+  velocity to its 1,050 m/s muzzle velocity, and applies dispersion, gravity and drag.
+  Fast rounds use swept hits against moving targets. An empty press clicks after the first
+  keyboard/pointer interaction has unlocked browser audio.
+- **IR:** select `2`. The seeker acquires a hostile aircraft in the nose's 30° half-cone,
+  or follows the target selected and locked with `T`, `L`. Fire when **SHOOT** appears
+  (300 m–18 km). A single trigger press launches one missile. The HUD shows a seeker ring,
+  range limits and estimated time to impact.
+- **Radar:** select `3`, designate and lock an aircraft, then fire within 600 m–65 km and
+  the launch cone. Maintain the lock during **MIDCOURSE**; inside 15 km the missile goes
+  **ACTIVE** and no longer needs the launching aircraft. Losing the datalink before active,
+  exceeding the seeker gimbal, target destruction or a successful decoy makes the missile
+  ballistic. Range limits are nominal game envelopes, not guaranteed intercepts.
+- **Bombs/rockets:** `4` selects bombs and toggles to rockets on the next press; Enter also
+  cycles through both. The bomb **CCIP** pipper predicts terrain impact using the actual
+  release offset, gravity and drag. Place it over a ground target and tap Space. A dashed
+  pipper at the screen edge means the predicted impact is outside the view. Rockets fire
+  repeatedly while the trigger is held and follow their motor-driven ballistic trajectory.
+- **Defence:** `X` releases one flare and one chaff cartridge when available, at most one
+  packet every 0.5 seconds. Their chance of breaking seeker tracking depends on seeker type,
+  aspect and distance. They do not guarantee a miss. The simple incoming-missile cue is
+  omniscient for now; radar, LOS and an RWR belong to M8. Enemy AI weapon employment is M9;
+  incoming missiles and successful flare defence are covered by the headless combat tests.
+
+The HUD shows remaining weapons, flares/chaff, hull health, kills and damaged systems.
+Damage reduces engine thrust and control rates and causes a fuel leak. Explosive damage
+falls off with distance from the target's collision sphere; unguided fire and blast can also
+hit friendlies or the shooter. Only hostile kills count. Aircraft wrecks fall, destroyed
+surface units smoke, and wrecks expire after the configured timeout. Player death freezes
+the entire simulation with the cause; `R` rebuilds the world with fresh ammunition and health.
+
+`src/weapons/weapons.json` contains validated tuning for every weapon, the random seed,
+countermeasure probabilities and damage modifiers. Weapon angles are **half-cones in degrees**;
+other values use SI units. Each aircraft's `combat` section sets health and the starting gun,
+IR, radar, bomb, rocket, flare and chaff counts. Missiles, bombs and rockets share the bounded
+`world.maxMissiles` pool; bullets use `world.maxBullets`. Simulation and visual pools are reused.
+Base rearming/refuelling is deferred to the airbase system in M10; TV/laser guidance is optional
+future work. Reset currently restores the loadout.
 
 ## Configuration
 

@@ -24,9 +24,12 @@ import {
 } from './entities';
 import { offsetLatLon } from './geo';
 import { attitudeFromHPR } from './attitude';
-import { type Vec3, add, scale, vec3 } from './math3d';
+import { vec3 } from './math3d';
 import { type Controls, NEUTRAL_CONTROLS, step as stepAircraftPhysics } from './physics';
 import type { EnvironmentConfig, GroundConfig, WorldConfig } from './sim-config';
+import { CombatSystem } from '../weapons/system';
+import { WEAPONS, type WeaponsConfig } from '../weapons/config';
+import { ballisticStep, movePosition, type Position } from '../weapons/ballistics';
 
 /** Terrain height under a point from the renderer's loaded tiles, or undefined when unknown. */
 export type TerrainQuery = (lat: number, lon: number) => number | undefined;
@@ -52,11 +55,15 @@ export class World {
   private sequence = 0;
   private readonly order = new Map<string, number>();
   private projectileCounter = 0;
+  readonly combat: CombatSystem;
 
   constructor(
     readonly env: WorldEnvironment,
     readonly cfg: WorldConfig,
-  ) {}
+    weapons: WeaponsConfig = WEAPONS,
+  ) {
+    this.combat = new CombatSystem(this, weapons);
+  }
 
   get entities(): readonly Entity[] {
     return this.list;
@@ -100,6 +107,9 @@ export class World {
     this.byId.clear();
     this.order.clear();
     this.time = 0;
+    this.sequence = 0;
+    this.projectileCounter = 0;
+    this.combat.reset();
   }
 
   /** Update order: by kind, then by insertion. */
@@ -117,25 +127,35 @@ export class World {
    */
   spawnProjectile(spec: Omit<ProjectileSpec, 'id'>): ProjectileEntity | null {
     const max = spec.kind === 'bullet' ? this.cfg.maxBullets : this.cfg.maxMissiles;
-    const pool = this.list.filter((e): e is ProjectileEntity => e.kind === spec.kind);
-    const dead = pool.find((e) => !e.alive);
+    const pool = this.list.filter(
+      (e): e is ProjectileEntity =>
+        isProjectile(e) && (spec.kind === 'bullet' ? e.kind === 'bullet' : e.kind !== 'bullet'),
+    );
+    const dead = pool.find((e) => !e.alive && e.kind === spec.kind);
     if (dead) {
       return initProjectile(dead, { ...spec, id: dead.id });
     }
-    if (pool.length >= max) return null;
+    if (pool.length >= max) {
+      const reusable = pool.find((e) => !e.alive);
+      if (!reusable) return null;
+      initProjectile(reusable, { ...spec, id: reusable.id });
+      this.sort();
+      return reusable;
+    }
     const id = `${spec.kind}-${this.projectileCounter++}`;
     const e = initProjectile(null, { ...spec, id });
     this.add(e);
     return e;
   }
 
-  /** Kills an entity: aircraft freeze as crashed, everything else just stops. */
-  kill(e: Entity, reason: string): void {
+  /** Death is idempotent; credit/effects happen once. Non-player aircraft become falling wrecks. */
+  kill(e: Entity, reason: string, ownerId?: string): void {
     if (!e.alive) return;
     e.alive = false;
     e.health = 0;
     e.diedAt = this.time;
     e.deathReason = reason;
+    this.combat.destroyed(e, ownerId);
     if (isAircraft(e) && e.state.status !== 'crashed') {
       e.state = { ...e.state, status: 'crashed', crashReason: reason };
       syncAircraft(e);
@@ -144,35 +164,40 @@ export class World {
 
   step(dt: number, playerControls: Controls, terrain: TerrainQuery): WorldEvents {
     const events: WorldEvents = { collisions: [], deaths: [], removed: [] };
+    if (dt <= 0) return events;
     const R = this.env.environment.earthRadius;
+    const previous = new Map<string, Position>();
+    const living = new Set(this.list.filter((e) => e.alive).map((e) => e.id));
+    for (const e of this.list)
+      if (e.alive && !isProjectile(e))
+        previous.set(e.id, { lat: e.lat, lon: e.lon, height: e.height });
     this.time += dt;
+    this.combat.step(dt);
 
     for (const e of this.list) {
-      if (!e.alive) continue;
-      switch (e.kind) {
-        case 'aircraft':
-          this.stepAircraft(e, playerControls, terrain, dt);
-          break;
-        case 'ground-unit':
-        case 'ship':
-          this.stepSurface(e, terrain, dt, R);
-          break;
-        case 'bullet':
-        case 'missile':
-          this.stepProjectile(e, terrain, dt);
-          break;
-        default:
-          break;
+      if (!e.alive) {
+        this.stepWreck(e, terrain, dt);
+        continue;
       }
-      if (!e.alive) events.deaths.push(e.id);
+      if (isAircraft(e)) this.stepAircraft(e, playerControls, terrain, dt);
+      else if (e.kind === 'ground-unit' || e.kind === 'ship') this.stepSurface(e, terrain, dt, R);
     }
+    // Spawning can sort the list, so finish solid updates before weapons.
+    for (const e of this.aircraft()) if (e.alive) this.combat.fire(e, e.controls.fire ?? false, dt);
+    for (const e of this.list)
+      if (isProjectile(e) && e.alive) this.combat.stepProjectile(e, terrain, dt, previous);
 
     if (this.cfg.collisions) {
-      for (const { a, b } of findCollisions(this.list, R)) {
+      for (const { a, b } of findCollisions(
+        this.list.filter((e) => !isProjectile(e)),
+        R,
+      )) {
+        if (!a.alive || !b.alive) continue;
         events.collisions.push({ a: a.id, b: b.id });
         this.applyCollision(a, b, events);
       }
     }
+    events.deaths = this.list.filter((e) => living.has(e.id) && !e.alive).map((e) => e.id);
 
     // Expire wrecks; projectiles stay in the list as pool entries.
     for (const e of this.list) {
@@ -200,6 +225,8 @@ export class World {
         );
     e.controls = controls;
     e.state = stepAircraftPhysics(e.state, controls, e.model, terrain(e.lat, e.lon), dt);
+    if (e.systems.fuelLeak > 0)
+      e.state = { ...e.state, fuel: Math.max(0, e.state.fuel - e.systems.fuelLeak * dt) };
     syncAircraft(e);
     if (e.state.status === 'crashed') this.kill(e, e.state.crashReason ?? 'crashed');
   }
@@ -227,20 +254,27 @@ export class World {
     }
   }
 
-  private stepProjectile(e: ProjectileEntity, terrain: TerrainQuery, dt: number): void {
-    const env = this.env.environment;
-    const speed = Math.hypot(e.velocity.x, e.velocity.y, e.velocity.z);
-    const drag: Vec3 = scale(e.velocity, -e.dragFactor * speed);
-    e.velocity = add(e.velocity, scale(add(drag, vec3(0, 0, -env.gravity)), dt));
-    const next = offsetLatLon(e, e.velocity.x * dt, e.velocity.y * dt, env.earthRadius);
-    e.lat = next.lat;
-    e.lon = next.lon;
-    e.height += e.velocity.z * dt;
-    const g = terrain(e.lat, e.lon);
-    if (g !== undefined) e.groundHeight = g;
-    e.ttl -= dt;
-    if (e.height <= e.groundHeight) this.kill(e, 'ground');
-    else if (e.ttl <= 0) this.kill(e, 'expired');
+  private stepWreck(e: Entity, terrain: TerrainQuery, dt: number): void {
+    if (!isAircraft(e) || e.controlledByPlayer) return;
+    const ground = terrain(e.lat, e.lon) ?? e.groundHeight;
+    if (e.height <= ground) {
+      e.height = ground;
+      e.velocity = vec3(0, 0, 0);
+    } else {
+      const step = ballisticStep(e.velocity, dt, this.env.environment.gravity, 0.001);
+      Object.assign(e, movePosition(e, step.displacement, this.env.environment.earthRadius));
+      e.velocity = step.velocity;
+      e.height = Math.max(e.height, terrain(e.lat, e.lon) ?? ground);
+    }
+    e.groundHeight = terrain(e.lat, e.lon) ?? ground;
+    e.state = {
+      ...e.state,
+      lat: e.lat,
+      lon: e.lon,
+      height: e.height,
+      velocity: e.velocity,
+      groundHeight: e.groundHeight,
+    };
   }
 
   private applyCollision(a: Entity, b: Entity, events: WorldEvents): void {

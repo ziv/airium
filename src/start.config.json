@@ -104,7 +104,16 @@
       "mouseFlight": ["m", "M"],
       "buildings": ["o", "O"],
       "units": ["u", "U"],
-      "debug": ["`"]
+      "debug": ["`"],
+      "fire": [" "],
+      "selectWeapon": ["Enter"],
+      "selectGun": ["1"],
+      "selectIR": ["2"],
+      "selectRadar": ["3"],
+      "selectAG": ["4"],
+      "target": ["t", "T", "Tab"],
+      "lock": ["l", "L"],
+      "countermeasures": ["x", "X"]
     },
     "keyboard": {
       "axisRampTime": 0.7,
@@ -131,7 +140,12 @@
         "airbrake": 2,
         "camera": 9,
         "reset": 8,
-        "pause": 16
+        "pause": 16,
+        "fire": 7,
+        "selectWeapon": 1,
+        "target": 12,
+        "lock": 13,
+        "countermeasures": 10
       }
     },
     "mouse": {

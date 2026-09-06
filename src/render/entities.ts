@@ -14,11 +14,12 @@ import {
   PointPrimitiveCollection,
   type Viewer,
 } from 'cesium';
-import type { Entity, Faction } from '../sim/entities';
+import { type Entity, type Faction, isProjectile } from '../sim/entities';
 import { enuOffset } from '../sim/geo';
 import { length } from '../sim/math3d';
 import type { World } from '../sim/world';
 import { aircraftPosition, enuFrame, modelMatrix } from './frames';
+import { CombatRenderer } from './combat';
 
 export interface ModelSource {
   uri: string;
@@ -55,6 +56,7 @@ export class EntityRenderer {
   private readonly position = new Cartesian3();
   private readonly frame = new Matrix4();
   private readonly matrix = new Matrix4();
+  private readonly combat: CombatRenderer;
 
   constructor(
     private readonly viewer: Viewer,
@@ -62,6 +64,7 @@ export class EntityRenderer {
     private readonly modelFor: ModelLookup,
   ) {
     this.points = viewer.scene.primitives.add(new PointPrimitiveCollection());
+    this.combat = new CombatRenderer(viewer);
   }
 
   /** Syncs the scene with the world. `player` is the entity distances are measured from. */
@@ -69,9 +72,8 @@ export class EntityRenderer {
     const player = world.get(playerId);
     const seen = new Set<string>();
     for (const e of world.entities) {
-      const isProjectile = e.kind === 'bullet' || e.kind === 'missile';
       if (e.id === playerId) continue;
-      if (isProjectile && !e.alive) continue;
+      if (isProjectile(e) && !e.alive) continue;
       seen.add(e.id);
       const slot = this.slotFor(e);
       const distance = player ? length(enuOffset(player, e, earthRadius)) : Infinity;
@@ -87,6 +89,7 @@ export class EntityRenderer {
         this.slots.delete(id);
       }
     }
+    this.combat.update(world);
   }
 
   private slotFor(e: Entity): Slot {
@@ -105,9 +108,12 @@ export class EntityRenderer {
     if (!show) return;
     // The setter clones and marks the point dirty; writing into its Cartesian would not.
     p.position = Cartesian3.fromDegrees(e.lon, e.lat, e.height, undefined, scratchPosition);
-    const isProjectile = e.kind === 'bullet' || e.kind === 'missile';
-    p.color = !e.alive ? WRECK_COLOR : isProjectile ? PROJECTILE_COLOR : FACTION_COLORS[e.faction];
-    p.pixelSize = e.kind === 'waypoint' ? 6 : isProjectile ? 3 : 8;
+    p.color = !e.alive
+      ? WRECK_COLOR
+      : isProjectile(e)
+        ? PROJECTILE_COLOR
+        : FACTION_COLORS[e.faction];
+    p.pixelSize = e.kind === 'waypoint' ? 6 : isProjectile(e) ? (e.kind === 'bullet' ? 3 : 5) : 8;
     p.outlineColor = Color.BLACK;
     p.outlineWidth = e.kind === 'waypoint' ? 1 : 2;
     p.scaleByDistance = new NearFarScalar(1_000, 1.3, 60_000, 0.6);
@@ -146,6 +152,7 @@ export class EntityRenderer {
   }
 
   private placeModel(model: Model, e: Entity): void {
+    model.color = e.alive ? Color.WHITE : WRECK_COLOR;
     Cartesian3.fromDegrees(e.lon, e.lat, e.height, undefined, this.position);
     enuFrame(this.position, this.frame);
     modelMatrix(this.frame, e.attitude, this.matrix);

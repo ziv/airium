@@ -57,6 +57,7 @@ export class KeyboardSource {
   private readonly held = new Set<HeldAction>();
   private presses: PressAction[] = [];
   private current: AxisInput = NEUTRAL_AXES;
+  private firePressed = false;
 
   constructor(
     target: Window,
@@ -66,7 +67,10 @@ export class KeyboardSource {
     this.map = keyToActionMap(keys);
     target.addEventListener('keydown', this.onKeyDown);
     target.addEventListener('keyup', this.onKeyUp);
-    target.addEventListener('blur', () => this.held.clear());
+    target.addEventListener('blur', () => {
+      this.held.clear();
+      this.firePressed = false;
+    });
   }
 
   /** Advances the axis ramps; call once per frame with the real frame time. */
@@ -89,6 +93,13 @@ export class KeyboardSource {
     return this.held.has(action);
   }
 
+  /** Preserve a short trigger tap even when key-up arrives before the next physics step. */
+  takeFirePress(): boolean {
+    const pressed = this.firePressed;
+    this.firePressed = false;
+    return pressed;
+  }
+
   /** Presses since the last call, in order. */
   takePresses(): PressAction[] {
     const out = this.presses;
@@ -103,6 +114,7 @@ export class KeyboardSource {
     if (action === undefined) return;
     event.preventDefault();
     if (event.repeat) return;
+    if (action === 'fire') this.firePressed = true;
     if (isHeldAction(action)) this.held.add(action);
     else this.presses.push(action);
   };

@@ -6,6 +6,7 @@
  * Units: kg, m, m², N, m/s, kg/s, degrees for angles, degrees/s for rates.
  */
 import { ConfigError, isRecord, validateSection } from '../sim/validate';
+import { type Loadout, validateLoadout } from '../weapons/config';
 
 export interface AirframeConfig {
   /** Mass without fuel, kg. */
@@ -123,6 +124,7 @@ export interface AircraftType {
   gear: GearConfig;
   airbrake: AirbrakeConfig;
   model: ModelConfig;
+  combat: Loadout;
 }
 
 const AIRFRAME = {
@@ -211,6 +213,7 @@ export function validateAircraftType(id: string, input: unknown): AircraftType {
     gear: validateSection<GearConfig>(p('gear'), input['gear'], GEAR),
     airbrake: validateSection<AirbrakeConfig>(p('airbrake'), input['airbrake'], AIRBRAKE),
     model: validateSection<ModelConfig>(p('model'), input['model'], MODEL),
+    combat: validateLoadout(input['combat'], p('combat')),
   };
   const aero = type.aerodynamics;
   if (aero.zeroLiftAngle <= aero.stallAngle) {

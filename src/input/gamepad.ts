@@ -30,6 +30,10 @@ const PRESS_BUTTONS: readonly (keyof GamepadButtons & PressAction)[] = [
   'camera',
   'reset',
   'pause',
+  'selectWeapon',
+  'target',
+  'lock',
+  'countermeasures',
 ];
 
 /** Actions whose button went from up to down between two polls. */
@@ -56,6 +60,7 @@ export interface GamepadReading {
   throttleUp: boolean;
   throttleDown: boolean;
   brakes: boolean;
+  fire: boolean;
   buttons: boolean[];
 }
 
@@ -83,6 +88,7 @@ export function readGamepad(
     throttleUp: button(cfg.buttons.throttleUp),
     throttleDown: button(cfg.buttons.throttleDown),
     brakes: button(cfg.buttons.brakes),
+    fire: button(cfg.buttons.fire),
     buttons: [...buttons],
   };
 }
@@ -94,6 +100,7 @@ const NO_READING: GamepadReading = {
   throttleUp: false,
   throttleDown: false,
   brakes: false,
+  fire: false,
   buttons: [],
 };
 
@@ -102,6 +109,7 @@ export class GamepadSource {
   private previousButtons: boolean[] = [];
   private presses: PressAction[] = [];
   private throttleDelta = 0;
+  private firePressed = false;
   connected = false;
 
   constructor(
@@ -121,6 +129,11 @@ export class GamepadSource {
       return;
     }
     const buttons = pad.buttons.map((b) => b.pressed);
+    if (
+      buttons[this.cfg.buttons.fire] === true &&
+      this.previousButtons[this.cfg.buttons.fire] !== true
+    )
+      this.firePressed = true;
     this.reading = readGamepad(pad.axes, buttons, this.cfg);
     this.presses.push(...pressedEdges(this.previousButtons, buttons, this.cfg.buttons));
     this.previousButtons = buttons;
@@ -138,6 +151,16 @@ export class GamepadSource {
 
   afterburnerAxis(): boolean {
     return this.reading.afterburner;
+  }
+
+  fire(): boolean {
+    return this.reading.fire;
+  }
+
+  takeFirePress(): boolean {
+    const pressed = this.firePressed;
+    this.firePressed = false;
+    return pressed;
   }
 
   brakes(): boolean {

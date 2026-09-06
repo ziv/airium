@@ -26,6 +26,7 @@ import {
   type Viewport,
   clampToEdge,
   projectDirection,
+  projectPoint,
 } from './projection';
 
 const CRASH_COLOR = '#ff6b6b';
@@ -83,12 +84,15 @@ export class HudCanvas {
     ctx.lineWidth = 1.5;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 3;
     this.font(1);
 
     this.drawLadder(d, vp);
     this.drawBoresight(d, vp);
     this.drawFlightPath(d, vp);
     this.drawTarget(d, vp);
+    this.drawCombat(d, vp);
     this.drawHeadingTape(d);
     this.drawAirspeedTape(d);
     this.drawAltitudeTape(d);
@@ -244,7 +248,7 @@ export class HudCanvas {
   private drawTarget(d: HudData, vp: Viewport): void {
     const t = d.target;
     if (!t) return;
-    const raw = projectDirection(t.direction, d.pose, vp);
+    const raw = projectPoint(t.direction, d.pose, vp);
     const p = clampToEdge(raw, vp, 50);
     const s = 14;
     this.ctx.setLineDash(t.locked ? [] : [5, 4]);
@@ -264,6 +268,82 @@ export class HudCanvas {
       p.y + 8,
     );
     if (t.locked) this.text('LOCK', p.x, p.y - s - 8, 'center');
+    if (t.aspect !== undefined) this.text(`ASP ${Math.round(t.aspect)}°`, p.x + s + 6, p.y + 24);
+  }
+
+  private drawCombat(d: HudData, vp: Viewport): void {
+    const c = d.combat;
+    if (!c) return;
+    const { ctx, width: w, height: h } = this;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillRect(w - 230, h * 0.85 - 14, 220, 72);
+    ctx.restore();
+    this.font(0.95);
+    this.text(c.label, w - 20, h * 0.85, 'right');
+    this.text(c.inventory, w - 20, h * 0.85 + 22, 'right');
+    this.text(
+      `HULL ${Math.round(c.health * 100)}%  KILLS ${c.kills}`,
+      w - 20,
+      h * 0.85 + 44,
+      'right',
+    );
+    if (c.systems.length) this.text(c.systems.join(' / '), w / 2, h * 0.93, 'center');
+    if (c.message) this.text(c.message, w / 2, h * 0.24, 'center');
+    if (c.incoming && flashOn(d.time, 4))
+      this.text('MISSILE INBOUND — X COUNTERMEASURES', w / 2, h * 0.28, 'center');
+    if (c.shoot) {
+      this.font(1.2, 'bold');
+      this.text('SHOOT', w / 2, h * 0.32, 'center');
+    }
+    this.font(0.9);
+    if (c.seeker) {
+      const p = projectDirection(c.seeker, d.pose, vp);
+      if (p.visible) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 26, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    if (c.envelope) {
+      const e = c.envelope;
+      const range = (metres: number) =>
+        d.units === 'imperial'
+          ? `${(metres / 1852).toFixed(1)} NM`
+          : `${(metres / 1000).toFixed(1)} KM`;
+      this.text(`RMIN ${range(e.min)}  RMAX ${range(e.max)}`, w / 2, h * 0.78, 'center');
+      if (e.reason) this.text(e.reason, w / 2, h * 0.78 + 20, 'center');
+    }
+    if (c.missile)
+      this.text(
+        `MSL ${c.missile.phase}  TTI ${c.missile.time === null ? '—' : `${Math.ceil(c.missile.time)}s`}`,
+        w / 2,
+        h * 0.82,
+        'center',
+      );
+    if (c.pipper) {
+      const cue = c.pipper;
+      const p = clampToEdge(
+        cue.finite
+          ? projectPoint(cue.direction, d.pose, vp)
+          : projectDirection(cue.direction, d.pose, vp),
+        vp,
+        50,
+      );
+      ctx.setLineDash(p.clamped ? [4, 4] : []);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      this.line({ x: p.x - 5, y: p.y }, { x: p.x + 5, y: p.y });
+      this.line({ x: p.x, y: p.y - 5 }, { x: p.x, y: p.y + 5 });
+      this.text(`${cue.label} ${cue.time.toFixed(1)}s`, p.x + 18, p.y);
+      if (p.clamped) this.arrow(p, p.angle, 7);
+      if (cue.finite) {
+        const nose = projectDirection(d.boresight, d.pose, vp);
+        if (nose.visible) this.line(nose, p, true);
+      }
+    }
   }
 
   // ---- tapes --------------------------------------------------------------
@@ -458,10 +538,10 @@ export class HudCanvas {
       ctx.save();
       ctx.fillStyle = CRASH_COLOR;
       this.font(2.4, 'bold');
-      this.text('CRASHED', cx, h * 0.4, 'center');
+      this.text(d.combat?.destroyed ? 'DESTROYED' : 'CRASHED', cx, h * 0.4, 'center');
       this.font(1.2);
       this.text(d.crashReason ?? 'impact', cx, h * 0.4 + 40, 'center');
-      this.text('press R to reset', cx, h * 0.4 + 66, 'center');
+      this.text(`press ${d.restartKey ?? 'R'} to reset`, cx, h * 0.4 + 66, 'center');
       ctx.restore();
       return;
     }

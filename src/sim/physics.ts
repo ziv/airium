@@ -39,6 +39,7 @@ export interface Controls {
   gearDown: boolean;
   airbrake: boolean;
   brakes: boolean;
+  fire?: boolean;
 }
 
 export const NEUTRAL_CONTROLS: Controls = {

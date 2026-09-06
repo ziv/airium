@@ -3,20 +3,44 @@ import startJson from '../start.config.json';
 import { validateSimConfig } from '../sim/sim-config';
 import { mergeAxes, stepThrottle } from './controls';
 import { pressedEdges, readGamepad, shapeAxis, throttleFromAxis } from './gamepad';
-import { axesFromHeld, keyToActionMap, rampAxis } from './keyboard';
+import { KeyboardSource, axesFromHeld, keyToActionMap, rampAxis } from './keyboard';
 import { formatLegend, legendEntries } from './legend';
 import { decayLook, flightAxesFromPointer } from './mouse';
 
 const { input } = validateSimConfig(startJson);
 
 describe('keyboard', () => {
+  it('retains a short fire tap until consumed and ignores key-repeat', () => {
+    const target = new EventTarget();
+    const keyboard = new KeyboardSource(target as unknown as Window, input.keys, input.keyboard);
+    const key = (type: string, repeat = false) =>
+      Object.assign(new Event(type, { cancelable: true }), {
+        key: ' ',
+        repeat,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+      });
+    target.dispatchEvent(key('keydown'));
+    target.dispatchEvent(key('keyup'));
+    expect(keyboard.isHeld('fire')).toBe(false);
+    expect(keyboard.takeFirePress()).toBe(true);
+    expect(keyboard.takeFirePress()).toBe(false);
+    target.dispatchEvent(key('keydown', true));
+    expect(keyboard.takeFirePress()).toBe(false);
+    target.dispatchEvent(key('keydown'));
+    target.dispatchEvent(new Event('blur'));
+    expect(keyboard.takeFirePress()).toBe(false);
+  });
   it('maps every bound key to its action', () => {
     const map = keyToActionMap(input.keys);
     expect(map.get('ArrowLeft')).toBe('rollLeft');
     expect(map.get('g')).toBe('gear');
     expect(map.get('G')).toBe('gear');
     expect(map.get('F2')).toBe('cameraChase');
-    expect(map.get('x')).toBeUndefined();
+    expect(map.get('x')).toBe('countermeasures');
+    expect(map.get(' ')).toBe('fire');
+    expect(map.get('Enter')).toBe('selectWeapon');
   });
 
   it('is neutral with nothing held and cancels opposing keys', () => {
@@ -119,6 +143,27 @@ describe('gamepad', () => {
     expect(pressedEdges(now, now, buttons)).toEqual([]);
     const unassigned = { ...buttons, gear: -1 };
     expect(pressedEdges([], now, unassigned)).toEqual(['camera']);
+  });
+
+  it('maps the trigger and combat button edges without repeating held actions', () => {
+    const buttons = input.gamepad.buttons;
+    const current: boolean[] = [];
+    for (const index of [
+      buttons.fire,
+      buttons.selectWeapon,
+      buttons.target,
+      buttons.lock,
+      buttons.countermeasures,
+    ])
+      current[index] = true;
+    expect(readGamepad([], current, input.gamepad).fire).toBe(true);
+    expect(pressedEdges([], current, buttons)).toEqual([
+      'selectWeapon',
+      'target',
+      'lock',
+      'countermeasures',
+    ]);
+    expect(pressedEdges(current, current, buttons)).toEqual([]);
   });
 });
 

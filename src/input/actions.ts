@@ -12,6 +12,7 @@ export const HELD_ACTIONS = [
   'yawLeft',
   'yawRight',
   'brakes',
+  'fire',
 ] as const;
 
 /** Actions that fire once per press. */
@@ -34,6 +35,14 @@ export const PRESS_ACTIONS = [
   'buildings',
   'units',
   'debug',
+  'selectWeapon',
+  'selectGun',
+  'selectIR',
+  'selectRadar',
+  'selectAG',
+  'target',
+  'lock',
+  'countermeasures',
 ] as const;
 
 export type HeldAction = (typeof HELD_ACTIONS)[number];
@@ -57,6 +66,15 @@ export const ACTION_LABELS: Record<Action, string> = {
   yawLeft: 'yaw left',
   yawRight: 'yaw right',
   brakes: 'wheel brakes (hold)',
+  fire: 'fire / release weapon',
+  selectWeapon: 'next weapon',
+  selectGun: 'select gun',
+  selectIR: 'select IR missile',
+  selectRadar: 'select radar missile',
+  selectAG: 'select bomb / rocket',
+  target: 'next target',
+  lock: 'lock / unlock target',
+  countermeasures: 'release chaff and flare',
   throttleUp: 'throttle up (past 100 % lights the afterburner)',
   throttleDown: 'throttle down (cuts the afterburner first)',
   afterburner: 'afterburner on/off',

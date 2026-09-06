@@ -5,11 +5,15 @@
  */
 import type { AircraftType } from '../aircraft/aircraft-type';
 import type { UnitType } from '../units/unit-type';
+import type { WeaponId } from '../weapons/config';
+import { createWeaponState, type WeaponState } from '../weapons/state';
+import type { Position } from '../weapons/ballistics';
 import { type Attitude, attitudeFromHPR } from './attitude';
 import { type Vec3, ZERO, toRadians } from './math3d';
 import { type AircraftState, type Controls, type FlightModel, NEUTRAL_CONTROLS } from './physics';
 
-export type EntityKind = 'aircraft' | 'missile' | 'bullet' | 'ground-unit' | 'ship' | 'waypoint';
+export type EntityKind =
+  'aircraft' | 'missile' | 'bullet' | 'bomb' | 'rocket' | 'ground-unit' | 'ship' | 'waypoint';
 export type Faction = 'player' | 'friendly' | 'hostile' | 'neutral';
 
 /** Update order within a step; lower first. */
@@ -19,7 +23,9 @@ export const KIND_ORDER: Record<EntityKind, number> = {
   ship: 2,
   missile: 3,
   bullet: 4,
-  waypoint: 5,
+  bomb: 5,
+  rocket: 6,
+  waypoint: 7,
 };
 
 export interface Waypoint {
@@ -77,6 +83,7 @@ export interface EntityBase {
   diedAt: number | null;
   /** Why it died, for the HUD and debrief. */
   deathReason: string | null;
+  killedBy?: string;
 }
 
 export interface AircraftEntity extends EntityBase {
@@ -88,6 +95,8 @@ export interface AircraftEntity extends EntityBase {
   controls: Controls;
   controlledByPlayer: boolean;
   behaviour: Behaviour;
+  weapons: WeaponState;
+  systems: { engine: number; controls: number; fuelLeak: number };
   /** Defaults the behaviours fall back to: the spawn heading, altitude and speed. */
   cruise: { heading: number; altitude: number; speed: number };
 }
@@ -106,18 +115,27 @@ export interface WaypointEntity extends EntityBase {
 }
 
 export interface ProjectileEntity extends EntityBase {
-  kind: 'bullet' | 'missile';
+  kind: 'bullet' | 'missile' | 'bomb' | 'rocket';
   ownerId: string;
   /** Seconds left to live. */
   ttl: number;
   /** Drag: acceleration = -dragFactor * |v| * v. */
   dragFactor: number;
+  weaponId: WeaponId | null;
+  targetId: string | null;
+  guidance: 'none' | 'tracking' | 'active' | 'lost';
+  age: number;
+  generation: number;
+  trail: Position[];
+  trailAt: number;
+  distanceTravelled: number;
+  groundHeight: number;
 }
 
 export type Entity = AircraftEntity | SurfaceEntity | WaypointEntity | ProjectileEntity;
 
 export function isProjectile(e: Entity): e is ProjectileEntity {
-  return e.kind === 'bullet' || e.kind === 'missile';
+  return e.kind === 'bullet' || e.kind === 'missile' || e.kind === 'bomb' || e.kind === 'rocket';
 }
 
 export function isAircraft(e: Entity): e is AircraftEntity {
@@ -165,8 +183,8 @@ export function createAircraftEntity(spec: AircraftSpec): AircraftEntity {
     velocity: ZERO,
     groundHeight: 0,
     radius: spec.radius ?? 8,
-    health: 100,
-    maxHealth: 100,
+    health: spec.type.combat.health,
+    maxHealth: spec.type.combat.health,
     impactDamage: Infinity,
     alive: true,
     diedAt: null,
@@ -178,6 +196,8 @@ export function createAircraftEntity(spec: AircraftSpec): AircraftEntity {
     controls: NEUTRAL_CONTROLS,
     controlledByPlayer: spec.controlledByPlayer,
     behaviour: spec.behaviour,
+    weapons: createWeaponState(spec.type.combat),
+    systems: { engine: 1, controls: 1, fuelLeak: 0 },
     cruise: {
       heading: Math.atan2(spec.state.attitude.forward.x, spec.state.attitude.forward.y),
       altitude: spec.state.height,
@@ -261,7 +281,7 @@ export function createWaypointEntity(spec: {
 
 export interface ProjectileSpec {
   id: string;
-  kind: 'bullet' | 'missile';
+  kind: ProjectileEntity['kind'];
   ownerId: string;
   faction: Faction;
   lat: number;
@@ -273,6 +293,9 @@ export interface ProjectileSpec {
   dragFactor: number;
   radius: number;
   damage: number;
+  weaponId?: WeaponId;
+  targetId?: string;
+  groundHeight?: number;
 }
 
 /** Fills (or refills, when pooled) a projectile record. */
@@ -301,8 +324,17 @@ export function initProjectile(
     ownerId: spec.ownerId,
     ttl: 0,
     dragFactor: 0,
+    weaponId: null,
+    targetId: null,
+    guidance: 'none',
+    age: 0,
+    generation: 0,
+    trail: [],
+    trailAt: 0,
+    distanceTravelled: 0,
   };
   e.name = spec.kind;
+  e.kind = spec.kind;
   e.faction = spec.faction;
   e.lat = spec.lat;
   e.lon = spec.lon;
@@ -319,5 +351,15 @@ export function initProjectile(
   e.ownerId = spec.ownerId;
   e.ttl = spec.ttl;
   e.dragFactor = spec.dragFactor;
+  e.groundHeight = spec.groundHeight ?? 0;
+  e.weaponId = spec.weaponId ?? null;
+  e.targetId = spec.targetId ?? null;
+  e.guidance = e.targetId ? 'tracking' : 'none';
+  e.age = 0;
+  e.generation++;
+  e.trail = [{ lat: e.lat, lon: e.lon, height: e.height }];
+  e.trailAt = 0;
+  e.distanceTravelled = 0;
+  delete e.killedBy;
   return e;
 }

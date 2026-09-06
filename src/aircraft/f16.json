@@ -54,5 +54,15 @@
     "scale": 1,
     "cockpitForward": 4,
     "cockpitUp": 0.9
+  },
+  "combat": {
+    "health": 100,
+    "gun": 510,
+    "ir": 2,
+    "radar": 2,
+    "bomb": 2,
+    "rocket": 14,
+    "chaff": 30,
+    "flare": 30
   }
 }

@@ -137,6 +137,11 @@ export interface GamepadAxes {
 }
 
 export interface GamepadButtons {
+  fire: number;
+  selectWeapon: number;
+  target: number;
+  lock: number;
+  countermeasures: number;
   throttleUp: number;
   throttleDown: number;
   afterburner: number;
@@ -320,6 +325,11 @@ const GAMEPAD_AXES: SectionSpec<GamepadAxes> = {
 };
 
 const GAMEPAD_BUTTONS: SectionSpec<GamepadButtons> = {
+  fire: { min: -1, max: 63 },
+  selectWeapon: { min: -1, max: 63 },
+  target: { min: -1, max: 63 },
+  lock: { min: -1, max: 63 },
+  countermeasures: { min: -1, max: 63 },
   throttleUp: { min: -1, max: 63 },
   throttleDown: { min: -1, max: 63 },
   afterburner: { min: -1, max: 63 },

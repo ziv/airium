@@ -1,12 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { attitudeFromHPR } from '../sim/attitude';
 import { normalize, toRadians, vec3 } from '../sim/math3d';
-import { type Viewport, clampToEdge, focalLength, projectDirection } from './projection';
+import {
+  type Viewport,
+  clampToEdge,
+  focalLength,
+  projectDirection,
+  projectPoint,
+} from './projection';
 
 const vp: Viewport = { width: 1600, height: 900, fov: toRadians(60) };
 const pose = attitudeFromHPR({ heading: toRadians(90), pitch: 0, roll: 0 });
 
 describe('projectDirection', () => {
+  it('projects finite targets using camera position in chase and orbit views', () => {
+    const camera = { ...pose, position: vec3(-35, 0, 8) };
+    const point = projectPoint(vec3(500, 0, 8), camera, vp);
+    expect(point.x).toBeCloseTo(800);
+    expect(point.y).toBeCloseTo(450);
+    expect(projectPoint(vec3(500, 0, 0), camera, vp).y).toBeGreaterThan(450);
+    expect(projectDirection(pose.forward, camera, vp).y).toBeCloseTo(450);
+  });
   it('puts the boresight at the centre of the screen', () => {
     const p = projectDirection(pose.forward, pose, vp);
     expect(p.visible).toBe(true);

@@ -9,6 +9,7 @@ import type { HudConfig, Units } from '../sim/sim-config';
 import { type Warnings, activeWarnings } from '../sim/warnings';
 import { pullUpWarning } from './layout';
 import type { CameraPose } from './projection';
+import type { CombatHud } from './combat-data';
 
 /** Target symbology, filled in by the sensors and weapons milestones. */
 export interface TargetSymbology {
@@ -20,6 +21,7 @@ export interface TargetSymbology {
   closure: number;
   locked: boolean;
   label?: string;
+  aspect?: number;
 }
 
 export interface HudData {
@@ -65,6 +67,8 @@ export interface HudData {
   waypointHeading?: number;
   target?: TargetSymbology;
   weapon?: string;
+  combat?: CombatHud;
+  restartKey?: string;
 }
 
 export interface HudExtras {
@@ -78,6 +82,8 @@ export interface HudExtras {
   waypointHeading?: number;
   target?: TargetSymbology;
   weapon?: string;
+  combat?: CombatHud;
+  restartKey?: string;
 }
 
 export function buildHudData(
@@ -129,5 +135,7 @@ export function buildHudData(
     ...(extras.waypointHeading !== undefined ? { waypointHeading: extras.waypointHeading } : {}),
     ...(extras.target !== undefined ? { target: extras.target } : {}),
     ...(extras.weapon !== undefined ? { weapon: extras.weapon } : {}),
+    ...(extras.combat !== undefined ? { combat: extras.combat } : {}),
+    ...(extras.restartKey !== undefined ? { restartKey: extras.restartKey } : {}),
   };
 }

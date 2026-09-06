@@ -67,6 +67,7 @@ export class InputManager {
   private gearDown = true;
   private airbrake = false;
   private pending: PressAction[] = [];
+  private fireQueued = false;
 
   constructor(
     win: Window,
@@ -88,12 +89,16 @@ export class InputManager {
     this.throttleState = { throttle: 0, afterburner: false };
     this.gearDown = onGround;
     this.airbrake = false;
+    this.consumeFirePress();
   }
 
   /** Polls the devices and applies the pilot's own toggles. Call once per frame. */
   update(dt: number): void {
     this.keyboard.update(dt);
     this.gamepad.poll(dt);
+    const keyboardFire = this.keyboard.takeFirePress();
+    const gamepadFire = this.gamepad.takeFirePress();
+    this.fireQueued ||= keyboardFire || gamepadFire;
     this.mouse.update(dt);
     for (const press of [...this.keyboard.takePresses(), ...this.gamepad.takePresses()]) {
       switch (press) {
@@ -164,7 +169,15 @@ export class InputManager {
       gearDown: this.gearDown,
       airbrake: this.airbrake,
       brakes: this.keyboard.isHeld('brakes') || this.gamepad.brakes(),
+      fire: this.fireQueued || this.keyboard.isHeld('fire') || this.gamepad.fire(),
     };
+  }
+
+  /** Acknowledge after a physics step, or discard while paused/dead/settling. */
+  consumeFirePress(): void {
+    this.fireQueued = false;
+    this.keyboard.takeFirePress();
+    this.gamepad.takeFirePress();
   }
 
   /** Human-readable device summary for the HUD. */

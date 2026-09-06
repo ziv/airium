@@ -132,7 +132,12 @@ export class CameraRig {
       return vec3(r.x, r.y, r.z);
     };
     const { camera } = this.viewer;
-    return { forward: toEnu(camera.direction), right: toEnu(camera.right), up: toEnu(camera.up) };
+    return {
+      forward: toEnu(camera.direction),
+      right: toEnu(camera.right),
+      up: toEnu(camera.up),
+      position: toEnu(Cartesian3.subtract(camera.positionWC, this.position, new Cartesian3())),
+    };
   }
 
   /** Whether the own-aircraft model should be drawn in this view. */

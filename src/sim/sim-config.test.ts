@@ -155,8 +155,8 @@ describe('validateKeyBindings', () => {
     expect(() => validateKeyBindings({ ...input.keys, gear: ['p'] })).toThrow(
       /key "p" is bound to both gear and pause/,
     );
-    expect(() => validateKeyBindings({ ...input.keys, fire: [' '] })).toThrow(
-      /"input.keys.fire" is not a known setting/,
+    expect(() => validateKeyBindings({ ...input.keys, nonexistent: ['q'] })).toThrow(
+      /"input.keys.nonexistent" is not a known setting/,
     );
   });
 

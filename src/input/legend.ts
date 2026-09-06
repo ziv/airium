@@ -20,6 +20,15 @@ const PAIRS: readonly [Action, Action, string][] = [
 ];
 
 const SINGLES: readonly [Action, string][] = [
+  ['fire', 'fire'],
+  ['selectWeapon', 'next weapon'],
+  ['selectGun', 'gun'],
+  ['selectIR', 'IR'],
+  ['selectRadar', 'radar missile'],
+  ['selectAG', 'bomb/rocket'],
+  ['target', 'target'],
+  ['lock', 'lock'],
+  ['countermeasures', 'chaff/flare'],
   ['afterburner', 'afterburner'],
   ['gear', 'gear'],
   ['airbrake', 'airbrake'],

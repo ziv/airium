@@ -4,13 +4,15 @@
  * infinity, so only the camera's orientation and field of view matter, not
  * its position. Pure: no Cesium, no DOM.
  */
-import { type Vec3, dot } from '../sim/math3d';
+import { type Vec3, dot, sub, ZERO } from '../sim/math3d';
 
 /** Camera orientation as unit vectors in the aircraft's ENU frame. */
 export interface CameraPose {
   forward: Vec3;
   right: Vec3;
   up: Vec3;
+  /** Camera offset from the aircraft, ENU metres, for finite target/impact points. */
+  position?: Vec3;
 }
 
 export interface Viewport {
@@ -52,6 +54,10 @@ export function projectDirection(dir: Vec3, pose: CameraPose, vp: Viewport): Pro
   }
   const f = focalLength(vp);
   return { x: cx + (x / z) * f, y: cy - (y / z) * f, visible: true };
+}
+
+export function projectPoint(offset: Vec3, pose: CameraPose, vp: Viewport): Projected {
+  return projectDirection(sub(offset, pose.position ?? ZERO), pose, vp);
 }
 
 export interface EdgePoint extends ScreenPoint {

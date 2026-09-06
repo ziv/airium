@@ -197,45 +197,54 @@ a hill; they render at the right place and scale, and flying into one crashes bo
 
 Goal: shoot things down.
 
+Implemented in `src/weapons/`, with `src/hud/combat-data.ts` and pooled Cesium effects in
+`src/render/combat.ts`. Basic visual designation (`T`/`Tab`, `L`) and IR boresight acquisition
+supply the M8 lock prerequisite; full radar/LOS/RWR remains M8. Try `?mission=weapons-range`
+with the default airborne start. The deterministic headless acceptance tests cover gun and IR
+kills, bomb-to-CCIP error below 2 m on flat terrain, and an incoming missile decoyed by flares.
+Enemy AI employment remains M9; the range drones are unarmed.
+
 ### Gun
 
-- [ ] Fixed cannon (M61-like: 100 rounds/s, 1 050 m/s muzzle velocity, 510 rounds), fire
+- [x] Fixed cannon (M61-like: 100 rounds/s, 1 050 m/s muzzle velocity, 510 rounds), fire
       with `Space`/trigger, muzzle offset in body frame, small dispersion.
-- [ ] Bullet entities: ballistic integration (gravity, quadratic drag), lifetime ~3 s,
+- [x] Bullet entities: ballistic integration (gravity, quadratic drag), lifetime ~3 s,
       rendered as tracers (short polylines or point primitives); pooled.
-- [ ] Hit detection: swept segment vs target bounding sphere per step; damage per hit.
-- [ ] Lead-computing gun sight on the HUD using the target's relative velocity and bullet time
+- [x] Hit detection: swept segment vs target bounding sphere per step; damage per hit.
+- [x] Lead-computing gun sight on the HUD using the target's relative velocity and bullet time
       of flight.
-- [ ] Ammo counter, empty-gun click, rearm at base (M10).
+- [x] Ammo counter and empty-gun click. Reset restores the loadout; rearm at base remains
+      part of the M10 airbase system.
 
 ### Missiles
 
-- [ ] Missile types in config: short-range IR (AIM-9-like: 18 km, 25 g, seeker cone 30°,
+- [x] Missile types in config: short-range IR (AIM-9-like: 18 km, 25 g, seeker cone 30°,
       boresight or radar-slaved), medium-range radar (AIM-120-like: 60+ km, datalink until
       active); each with motor thrust and burn time, mass, drag, max g, seeker field of view
       and gimbal limit, proximity fuze radius, warhead damage/radius, minimum range.
-- [ ] Guidance: proportional navigation toward the tracked target with g clamp; seeker loses
+- [x] Guidance: proportional navigation toward the tracked target with g clamp; seeker loses
       lock if the target leaves the gimbal or countermeasures succeed; go ballistic when lost.
-- [ ] Launch logic: needs a lock (M8) inside Rmin/Rmax and seeker cone; launch transient,
+- [x] Launch logic: needs a lock (M8) inside Rmin/Rmax and seeker cone; launch transient,
       smoke trail (polyline), time-to-impact on the HUD.
-- [ ] Countermeasures: `X` releases chaff/flare (counts in config); probability of decoying
+- [x] Countermeasures: `X` releases chaff/flare (counts in config); probability of decoying
       depends on seeker type, aspect and range; decoys rendered briefly.
-- [ ] Weapon selection: `Enter`/`1`–`3` cycles gun/IR/radar/A-G; HUD shows selection and count.
+- [x] Weapon selection: `Enter` cycles all five weapons; `1`–`3` select gun/IR/radar,
+      `4` selects/toggles bomb/rocket; HUD shows selection and count.
 
 ### Air-to-ground
 
-- [ ] Unguided bombs with CCIP pipper (integrate the bomb trajectory to terrain impact each
+- [x] Unguided bombs with CCIP pipper (integrate the bomb trajectory to terrain impact each
       frame) and rockets; release with the same trigger.
 - [ ] Optional: TV/laser-guided bomb with a designated ground point (later).
 
 ### Damage and destruction
 
-- [ ] Health per entity type; hit damage; warhead damage falls off with distance; system
+- [x] Health per entity type; hit damage; warhead damage falls off with distance; system
       damage for the player (engine, controls, fuel leak) as simple modifiers.
-- [ ] Destroyed state: explosion effect, falling wreck for aircraft, smoke plume for ground
+- [x] Destroyed state: explosion effect, falling wreck for aircraft, smoke plume for ground
       units, removal after a timeout; kill credited to the shooter.
-- [ ] Player death: crash/kill freezes the sim with a cause message and a restart prompt.
-- [ ] Unit tests: bullet ballistics vs analytic drop, segment-sphere hit, PN guidance hits a
+- [x] Player death: crash/kill freezes the sim with a cause message and a restart prompt.
+- [x] Unit tests: bullet ballistics vs analytic drop, segment-sphere hit, PN guidance hits a
       constant-velocity target, Rmin/Rmax gating, flare decoy probability, damage falloff,
       CCIP impact point on flat terrain.
 

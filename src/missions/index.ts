@@ -4,8 +4,12 @@ import { type Mission, validateMission } from '../sim/spawn';
 import { ConfigError } from '../sim/validate';
 import { UNIT_IDS } from '../units';
 import coastalPatrol from './coastal-patrol.json';
+import weaponsRange from './weapons-range.json';
 
-const SOURCES: Record<string, unknown> = { 'coastal-patrol': coastalPatrol };
+const SOURCES: Record<string, unknown> = {
+  'coastal-patrol': coastalPatrol,
+  'weapons-range': weaponsRange,
+};
 
 export const MISSION_IDS: readonly string[] = Object.keys(SOURCES);
 

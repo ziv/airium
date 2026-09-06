@@ -1,0 +1,66 @@
+{
+  "name": "Weapons range",
+  "description": "Two unarmed target drones ahead of the default start and ground targets farther east. Space fires, T selects, L locks, 1 gun, 2 IR, 3 radar, 4 bomb/rocket, X countermeasures. Drones do not fire back; enemy weapon employment comes with M9.",
+  "entities": [
+    {
+      "id": "gun-drone",
+      "name": "Gunnery drone",
+      "kind": "aircraft",
+      "type": "trainer",
+      "faction": "hostile",
+      "lat": 32.1021052467175,
+      "lon": 34.8122,
+      "height": 2025,
+      "heading": 90,
+      "speed": 70,
+      "behaviour": {
+        "mode": "straight"
+      }
+    },
+    {
+      "id": "missile-drone",
+      "name": "Missile drone",
+      "kind": "aircraft",
+      "type": "trainer",
+      "faction": "hostile",
+      "lat": 32.108,
+      "lon": 34.838,
+      "height": 2050,
+      "heading": 90,
+      "speed": 70,
+      "behaviour": {
+        "mode": "straight"
+      }
+    },
+    {
+      "id": "bomb-target",
+      "name": "Bomb target",
+      "kind": "ground-unit",
+      "type": "sam-site",
+      "faction": "hostile",
+      "lat": 32.1021,
+      "lon": 34.91,
+      "heading": 0,
+      "route": null
+    },
+    {
+      "id": "rocket-target",
+      "name": "Rocket target",
+      "kind": "ground-unit",
+      "type": "truck",
+      "faction": "hostile",
+      "lat": 32.108,
+      "lon": 34.915,
+      "heading": 0,
+      "route": null
+    },
+    {
+      "id": "wp-range",
+      "name": "Ground range",
+      "kind": "waypoint",
+      "lat": 32.1021,
+      "lon": 34.91,
+      "height": 0
+    }
+  ]
+}
