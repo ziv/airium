@@ -32,6 +32,7 @@ export const PRESS_ACTIONS = [
   'cameraFlyby',
   'mouseFlight',
   'buildings',
+  'units',
   'debug',
 ] as const;
 
@@ -72,6 +73,7 @@ export const ACTION_LABELS: Record<Action, string> = {
   cameraFlyby: 'fly-by camera',
   mouseFlight: 'mouse flight on/off',
   buildings: '3D buildings on/off',
+  units: 'HUD units metric/imperial',
   debug: 'debug panel on/off',
 };
 

@@ -130,27 +130,30 @@ laptop with the medium preset.
 Goal: replace the text panel with a fighter-style HUD drawn on a canvas/SVG overlay, with
 the world-referenced symbols projected from Cesium.
 
-- [ ] `src/hud/` module rendering to a full-screen `<canvas>` above the Cesium canvas,
+- [x] `src/hud/` module rendering to a full-screen `<canvas>` above the Cesium canvas,
       scaled for device pixel ratio, redrawn every frame from the aircraft state.
-- [ ] Symbols: boresight cross, flight-path marker (velocity vector projected to screen
+- [x] Symbols: boresight cross, flight-path marker (velocity vector projected to screen
       through the camera), pitch ladder with horizon line (rolls with the aircraft in cockpit
-      view), heading tape with current heading and waypoint caret, airspeed tape (knots) with
+      view), heading tape with current heading and waypoint caret (`HudData.waypointHeading`,
+      fed by M8), airspeed tape (knots) with
       Mach below, altitude tape (feet) with radar altitude below a threshold, vertical speed,
       g readout with max g, AoA bracket, throttle/afterburner and fuel state, gear/brake
       indicators.
-- [ ] Warnings block: STALL, OVER-G, OVERSPEED, PULL UP (terrain closure predicted from
+- [x] Warnings block: STALL, OVER-G, OVERSPEED, PULL UP (terrain closure predicted from
       velocity and ground height), BINGO fuel, GEAR (low and slow with gear up), with
       flashing text and (M11) audio.
-- [ ] Combat symbology (populated by M7/M8): target designator box, target range/closure/
+- [x] Combat symbology (populated by M7/M8): target designator box, target range/closure/
       aspect, missile seeker circle and Rmin/Rmax cue, shoot cue, gun cross with lead
       computing sight (LCOS) pipper, selected weapon and rounds/missiles remaining, radar
-      lock state, RWR strip.
-- [ ] Units setting (metric/imperial) and HUD colour/brightness setting.
-- [ ] Keep the old text panel as a debug overlay behind a toggle key (backtick); add fps and
+      lock state, RWR strip. (Done so far: `HudData.target` draws the TD box with range,
+      closure, LOCK and an off-screen arrow, `HudData.weapon` the selection; seeker circle,
+      Rmin/Rmax, shoot cue, LCOS pipper and RWR come with the weapons and sensors.)
+- [x] Units setting (metric/imperial) and HUD colour/brightness setting.
+- [x] Keep the old text panel as a debug overlay behind a toggle key (backtick); add fps and
       tile-load counters to it.
-- [ ] Screen projection helper (`SceneTransforms.worldToWindowCoordinates` or manual
+- [x] Screen projection helper (`SceneTransforms.worldToWindowCoordinates` or manual
       projection from the camera matrices) with off-screen handling (clamp to edge with arrow).
-- [ ] Unit-test the pure layout math (ladder angles, tape scrolling, projection of a point
+- [x] Unit-test the pure layout math (ladder angles, tape scrolling, projection of a point
       known to be on boresight).
 
 Acceptance: in a level turn the horizon line and ladder roll correctly, the FPM sits below the

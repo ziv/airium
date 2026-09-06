@@ -102,6 +102,7 @@
       "cameraFlyby": ["F4"],
       "mouseFlight": ["m", "M"],
       "buildings": ["o", "O"],
+      "units": ["u", "U"],
       "debug": ["`"]
     },
     "keyboard": {
@@ -151,5 +152,16 @@
     "flybyLead": 4,
     "flybyMaxDistance": 1500,
     "nearPlane": 0.5
+  },
+  "hud": {
+    "units": "imperial",
+    "color": "#9cff9c",
+    "brightness": 0.9,
+    "fontSize": 14,
+    "radarAltitudeBelow": 1500,
+    "pullUpSeconds": 6,
+    "flashHz": 3,
+    "ladderSpacing": 5,
+    "ladderRange": 30
   }
 }

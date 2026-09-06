@@ -27,6 +27,7 @@ const SINGLES: readonly [Action, string][] = [
   ['camera', 'camera'],
   ['mouseFlight', 'mouse flight'],
   ['buildings', 'buildings'],
+  ['units', 'units'],
   ['pause', 'pause'],
   ['debug', 'debug'],
   ['reset', 'reset'],
