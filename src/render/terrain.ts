@@ -46,3 +46,25 @@ export function loadedGroundHeight(viewer: Viewer, lat: number, lon: number): nu
   if (h === undefined || !Number.isFinite(h)) return undefined;
   return h >= MIN_PLAUSIBLE_GROUND && h <= MAX_PLAUSIBLE_GROUND ? h : undefined;
 }
+
+/**
+ * Terrain heights under a batch of points, in one request. Points without
+ * terrain (no availability, failure) get 0.
+ */
+export async function sampleGroundHeights(
+  terrainProvider: TerrainProvider,
+  points: { lat: number; lon: number }[],
+): Promise<number[]> {
+  if (points.length === 0) return [];
+  if (!terrainProvider.availability) return points.map(() => 0);
+  try {
+    const samples = await sampleTerrainMostDetailed(
+      terrainProvider,
+      points.map((p) => Cartographic.fromDegrees(p.lon, p.lat)),
+    );
+    return samples.map((s) => (Number.isFinite(s.height) ? s.height : 0));
+  } catch (error) {
+    console.warn('[airium] terrain sampling failed for spawn points, assuming 0 m', error);
+    return points.map(() => 0);
+  }
+}

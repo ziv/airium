@@ -6,25 +6,34 @@ import { HudCanvas } from './hud/hud-canvas';
 import { buildHudData } from './hud/hud-data';
 import { InputManager } from './input/controls';
 import { formatLegend, legendEntries } from './input/legend';
+import { getMission } from './missions';
 import { OwnAircraft } from './render/aircraft-model';
 import { CameraRig, setCameraFov } from './render/cameras';
+import { EntityRenderer } from './render/entities';
 import { Buildings, applyGraphicsPreset, setTimeOfDay, tuneForFlight } from './render/graphics';
-import { loadedGroundHeight, sampleGroundHeight } from './render/terrain';
+import { loadedGroundHeight, sampleGroundHeight, sampleGroundHeights } from './render/terrain';
+import { type AircraftEntity, type Entity, createAircraftEntity } from './sim/entities';
+import { bearing } from './sim/geo';
+import { toDegrees } from './sim/math3d';
 import {
+  type AircraftState,
   type FlightModel,
   computeForces,
   createInitialState,
   interpolateState,
-  step,
 } from './sim/physics';
 import { SimClock } from './sim/sim-clock';
 import { resolveSimConfig } from './sim/sim-config';
+import { createEntities } from './sim/spawn';
 import { warningsFor } from './sim/warnings';
+import { World } from './sim/world';
 import startJson from './start.config.json';
+import { getUnitType } from './units';
 import { createViewer } from './viewer';
 
 /** Longest we wait for terrain tiles under the start point before flying anyway. */
 const SETTLE_TIMEOUT_MS = 10_000;
+const PLAYER_ID = 'player';
 
 async function main(): Promise<void> {
   const container = document.getElementById('cesiumContainer');
@@ -38,6 +47,8 @@ async function main(): Promise<void> {
   const model: FlightModel = { aircraft, ground: sim.ground, environment: sim.environment };
   const preset = sim.graphics.presets[sim.graphics.preset];
   if (preset === undefined) throw new Error(`unknown graphics preset "${sim.graphics.preset}"`);
+  const mission = start.mission.trim() === '' ? null : getMission(start.mission);
+  const earthRadius = sim.environment.earthRadius;
 
   const { viewer, terrainReady } = createViewer(container, sim.ion.token);
   tuneForFlight(viewer);
@@ -68,6 +79,53 @@ async function main(): Promise<void> {
     tilesQueued = queued;
   });
 
+  // The world: the player plus whatever the mission spawns.
+  const world = new World({ ground: sim.ground, environment: sim.environment }, sim.world);
+  const entities = new EntityRenderer(viewer, sim.world.lodDistance, (e: Entity) => {
+    if (e.kind === 'aircraft') return e.type.model;
+    if (e.kind === 'ground-unit' || e.kind === 'ship') return e.type.model;
+    return null;
+  });
+  const missionHeights = new Map<string, number>();
+
+  /** Rebuilds the world from the start configuration and the mission. */
+  const populate = (groundHeight: number): AircraftEntity => {
+    world.clear();
+    const player = createAircraftEntity({
+      id: PLAYER_ID,
+      name: 'Player',
+      faction: 'player',
+      type: aircraft,
+      model,
+      state: createInitialState(start, groundHeight, aircraft),
+      controlledByPlayer: true,
+      behaviour: { mode: 'straight' },
+    });
+    world.add(player);
+    if (mission) {
+      for (const e of createEntities(mission, missionHeights, {
+        aircraftType: getAircraftType,
+        unitType: getUnitType,
+        ground: sim.ground,
+        environment: sim.environment,
+      })) {
+        world.add(e);
+      }
+    }
+    return player;
+  };
+
+  // Terrain height lookups are cached per frame on an ~10 m grid: many
+  // entities ask every physics step and `globe.getHeight` is not free.
+  const terrainCache = new Map<string, number | undefined>();
+  const terrain = (lat: number, lon: number): number | undefined => {
+    const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+    if (terrainCache.has(key)) return terrainCache.get(key);
+    const h = loadedGroundHeight(viewer, lat, lon);
+    terrainCache.set(key, h);
+    return h;
+  };
+
   const hudInfo = () => ({
     aircraftName: aircraft.name,
     cameraMode: rig.mode,
@@ -79,12 +137,14 @@ async function main(): Promise<void> {
     tilesLoaded: viewer.scene.globe.tilesLoaded,
     tilesQueued,
     units,
+    entities: world.entities.length - 1,
   });
 
   /** Draws both overlays from the state shown on screen. */
-  const drawHud = (shown: typeof state, controls: { brakes: boolean }) => {
+  const drawHud = (shown: AircraftState, controls: { brakes: boolean }) => {
     const forces = computeForces(shown, model);
     const warnings = warningsFor(shown, forces, model);
+    const firstWaypoint = world.waypoints()[0];
     hud.draw(
       buildHudData(shown, forces, warnings, model, sim.hud, {
         pose: rig.pose(),
@@ -94,6 +154,9 @@ async function main(): Promise<void> {
         units,
         brakes: controls.brakes,
         time: performance.now() / 1000,
+        ...(firstWaypoint
+          ? { waypointHeading: toDegrees(bearing(shown, firstWaypoint, earthRadius)) }
+          : {}),
       }),
       rig.fov,
     );
@@ -101,7 +164,8 @@ async function main(): Promise<void> {
   };
 
   // Provisional placement on the ellipsoid while terrain loads.
-  let state = createInitialState(start, 0, aircraft);
+  let player = populate(0);
+  let state = player.state;
   /** State one physics step behind, for render interpolation. */
   let previous = state;
   own.update(state);
@@ -110,11 +174,19 @@ async function main(): Promise<void> {
 
   const provider = await terrainReady;
   let startGroundHeight = await sampleGroundHeight(provider, start.lat, start.lon);
-  state = createInitialState(start, startGroundHeight, aircraft);
+  if (mission) {
+    const heights = await sampleGroundHeights(provider, mission.entities);
+    mission.entities.forEach((e, i) => missionHeights.set(e.id, heights[i] ?? 0));
+  }
+  player = populate(startGroundHeight);
+  state = player.state;
+  previous = state;
   console.info('[airium] config', {
     ...sim,
     ion: { token: sim.ion.token ? '(set)' : null },
     aircraft: aircraft.id,
+    mission: mission?.name ?? null,
+    entities: world.entities.length,
     startGroundHeight,
   });
 
@@ -126,7 +198,8 @@ async function main(): Promise<void> {
 
   const reset = () => {
     input.reset(startsOnGround);
-    state = createInitialState(start, startGroundHeight, aircraft);
+    player = populate(startGroundHeight);
+    state = player.state;
     previous = state;
     clock.reset();
     rig.setMode(rig.mode);
@@ -136,7 +209,7 @@ async function main(): Promise<void> {
 
   if (import.meta.env.DEV) {
     // Console hook for debugging in the dev server: `airium.viewer`, `airium.state()`.
-    Object.assign(window, { airium: { viewer, state: () => state, clock } });
+    Object.assign(window, { airium: { viewer, state: () => state, clock, world } });
   }
 
   viewer.clock.onTick.addEventListener(() => {
@@ -144,6 +217,7 @@ async function main(): Promise<void> {
     const dt = Math.min(1, (now - last) / 1000);
     last = now;
     if (dt > 0) fps += (1 / dt - fps) * 0.1;
+    terrainCache.clear();
 
     input.update(dt);
     for (const press of input.takePresses()) {
@@ -192,7 +266,8 @@ async function main(): Promise<void> {
       const loaded = loadedGroundHeight(viewer, start.lat, start.lon);
       if (loaded !== undefined) {
         startGroundHeight = loaded;
-        state = createInitialState(start, startGroundHeight, aircraft);
+        player = populate(startGroundHeight);
+        state = player.state;
         previous = state;
       }
       settled = loaded !== undefined || now >= settleDeadline;
@@ -200,6 +275,7 @@ async function main(): Promise<void> {
         clock.reset();
         own.update(state);
         rig.update(state, dt, input.mouse.look(), input.mouse.takeOrbit());
+        entities.update(world, PLAYER_ID, earthRadius);
         drawHud(state, { brakes: false });
         return;
       }
@@ -207,17 +283,18 @@ async function main(): Promise<void> {
     }
 
     const controls = input.controls();
-    const terrainHeight = loadedGroundHeight(viewer, state.lat, state.lon);
     const steps = clock.advance(dt);
     for (let i = 0; i < steps; i++) {
       previous = state;
-      state = step(state, controls, model, terrainHeight, clock.fixedDt);
+      world.step(clock.fixedDt, controls, terrain);
+      state = player.state;
     }
 
     // Draw a fraction of a step behind so motion is smooth regardless of how
     // many physics steps this frame happened to contain.
     const shown = interpolateState(previous, state, clock.alpha);
     own.update(shown);
+    entities.update(world, PLAYER_ID, earthRadius);
     rig.update(shown, dt, input.mouse.look(), input.mouse.takeOrbit());
     drawHud(shown, controls);
   });

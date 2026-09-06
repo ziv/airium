@@ -1,0 +1,152 @@
+{
+  "name": "Coastal patrol",
+  "description": "A flight of three hostile fighters holds north of the field over the sea, a SAM site sits on a hill to the east, a patrol boat runs along the coast and a supply truck drives inland. Waypoint 1 marks the SAM, waypoint 2 the bandits' orbit.",
+  "entities": [
+    {
+      "id": "bandit-1",
+      "name": "Bandit 1",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "hostile",
+      "lat": 32.27,
+      "lon": 34.72,
+      "height": 2500,
+      "heading": 180,
+      "speed": 200,
+      "behaviour": {
+        "mode": "orbit",
+        "lat": 32.25,
+        "lon": 34.75,
+        "radius": 4000,
+        "altitude": 2500,
+        "speed": 200,
+        "clockwise": true
+      }
+    },
+    {
+      "id": "bandit-2",
+      "name": "Bandit 2",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "hostile",
+      "lat": 32.27,
+      "lon": 34.727,
+      "height": 2600,
+      "heading": 180,
+      "speed": 200,
+      "behaviour": {
+        "mode": "orbit",
+        "lat": 32.25,
+        "lon": 34.75,
+        "radius": 4000,
+        "altitude": 2600,
+        "speed": 200,
+        "clockwise": true
+      }
+    },
+    {
+      "id": "bandit-3",
+      "name": "Bandit 3",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "hostile",
+      "lat": 32.27,
+      "lon": 34.734,
+      "height": 2700,
+      "heading": 180,
+      "speed": 200,
+      "behaviour": {
+        "mode": "orbit",
+        "lat": 32.25,
+        "lon": 34.75,
+        "radius": 4000,
+        "altitude": 2700,
+        "speed": 200,
+        "clockwise": true
+      }
+    },
+    {
+      "id": "wingman",
+      "name": "Wingman",
+      "kind": "aircraft",
+      "type": "trainer",
+      "faction": "friendly",
+      "lat": 32.12,
+      "lon": 34.74,
+      "height": 800,
+      "heading": 0,
+      "speed": 55,
+      "behaviour": {
+        "mode": "waypoints",
+        "loop": true,
+        "waypoints": [
+          { "lat": 32.16, "lon": 34.74, "height": 900 },
+          { "lat": 32.16, "lon": 34.79, "height": 900 },
+          { "lat": 32.12, "lon": 34.79, "height": 900 },
+          { "lat": 32.12, "lon": 34.74, "height": 900 }
+        ]
+      }
+    },
+    {
+      "id": "sam-1",
+      "name": "SAM site",
+      "kind": "ground-unit",
+      "type": "sam-site",
+      "faction": "hostile",
+      "lat": 32.105,
+      "lon": 35.05,
+      "heading": 270,
+      "route": null
+    },
+    {
+      "id": "boat-1",
+      "name": "Patrol boat",
+      "kind": "ship",
+      "type": "patrol-boat",
+      "faction": "hostile",
+      "lat": 32.12,
+      "lon": 34.72,
+      "heading": 0,
+      "route": {
+        "loop": true,
+        "waypoints": [
+          { "lat": 32.2, "lon": 34.72, "height": 0 },
+          { "lat": 32.12, "lon": 34.72, "height": 0 }
+        ]
+      }
+    },
+    {
+      "id": "truck-1",
+      "name": "Supply truck",
+      "kind": "ground-unit",
+      "type": "truck",
+      "faction": "hostile",
+      "lat": 32.09,
+      "lon": 34.95,
+      "heading": 90,
+      "route": {
+        "loop": true,
+        "waypoints": [
+          { "lat": 32.09, "lon": 34.99, "height": 0 },
+          { "lat": 32.09, "lon": 34.95, "height": 0 }
+        ]
+      }
+    },
+    {
+      "id": "wp-1",
+      "name": "WP1 SAM",
+      "kind": "waypoint",
+      "lat": 32.105,
+      "lon": 35.05,
+      "height": 1500
+    },
+    {
+      "id": "wp-2",
+      "name": "WP2 CAP",
+      "kind": "waypoint",
+      "lat": 32.25,
+      "lon": 34.75,
+      "height": 2500
+    }
+  ]
+}

@@ -23,6 +23,8 @@ export interface HudInfo {
   /** Terrain tiles waiting to load. */
   tilesQueued: number;
   units: string;
+  /** Entities in the world besides the player. */
+  entities: number;
 }
 
 const pad = (s: string, w: number) => s.padStart(w);
@@ -68,7 +70,7 @@ export function formatDebug(
   if (active.length > 0) lines.push(`*** ${active.join('   ')} ***`);
   lines.push(
     `LAT ${num(state.lat, 5, 10)}   LON ${num(state.lon, 5, 10)}   CL ${num(forces.liftCoefficient, 2, 5)}   CD ${num(forces.dragCoefficient, 3, 6)}   Q ${num(forces.dynamicPressure, 0, 6)} Pa   THRUST ${num(forces.thrustMagnitude / 1000, 1, 6)} kN   MASS ${num(forces.mass, 0, 6)} kg`,
-    `FPS ${num(info.fps, 0, 3)}   TILES ${info.tilesLoaded ? 'loaded' : `${info.tilesQueued} loading`}   BUILDINGS ${info.buildings ? 'on' : 'off'}   UNITS ${info.units}   RATES ${deg(state.bodyRates.roll)} ${deg(state.bodyRates.pitch)} ${deg(state.bodyRates.yaw)}/s`,
+    `FPS ${num(info.fps, 0, 3)}   TILES ${info.tilesLoaded ? 'loaded' : `${info.tilesQueued} loading`}   BUILDINGS ${info.buildings ? 'on' : 'off'}   UNITS ${info.units}   ENTITIES ${info.entities}   RATES ${deg(state.bodyRates.roll)} ${deg(state.bodyRates.pitch)} ${deg(state.bodyRates.yaw)}/s`,
   );
   lines.push('', legend);
   return lines.join('\n');

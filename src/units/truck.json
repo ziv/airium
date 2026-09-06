@@ -1,0 +1,8 @@
+{
+  "name": "Supply truck",
+  "kind": "ground-unit",
+  "radius": 4,
+  "health": 40,
+  "speed": 14,
+  "model": { "uri": "models/truck.glb", "scale": 1 }
+}

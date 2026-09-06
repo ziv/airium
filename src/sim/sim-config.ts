@@ -34,6 +34,8 @@ export interface StartConfig {
   aircraft: string;
   /** Simulation date/time as ISO 8601 (for sun position and lighting); blank = now. */
   time: string;
+  /** Mission id from `src/missions` to spawn, or blank for an empty world. */
+  mission: string;
 }
 
 /** Ground contact rules. */
@@ -225,6 +227,19 @@ export interface HudConfig {
   ladderRange: number;
 }
 
+/** Entity world settings. */
+export interface WorldConfig {
+  /** Beyond this distance (m) from the player, entities draw as points instead of models. */
+  lodDistance: number;
+  /** Seconds a wreck stays before it is removed. */
+  wreckRemoveSeconds: number;
+  /** Projectile pool sizes. */
+  maxBullets: number;
+  maxMissiles: number;
+  /** Resolve entity collisions. */
+  collisions: boolean;
+}
+
 /** Cesium Ion access. */
 export interface IonConfig {
   /** Ion access token, or null to run token-free (OpenStreetMap imagery, no terrain). */
@@ -241,6 +256,7 @@ export interface SimConfig {
   input: InputConfig;
   camera: CameraConfig;
   hud: HudConfig;
+  world: WorldConfig;
 }
 
 const START: SectionSpec<StartConfig> = {
@@ -252,6 +268,7 @@ const START: SectionSpec<StartConfig> = {
   fov: { min: 1, max: 179 },
   aircraft: { type: 'string' },
   time: { type: 'string' },
+  mission: { type: 'string' },
 };
 
 const GROUND: SectionSpec<GroundConfig> = {
@@ -360,6 +377,14 @@ const HUD: SectionSpec<HudConfig> = {
   ladderRange: { min: 5, max: 90 },
 };
 
+const WORLD: SectionSpec<WorldConfig> = {
+  lodDistance: { min: 100, max: 1_000_000 },
+  wreckRemoveSeconds: { min: 0, max: 3_600 },
+  maxBullets: { min: 1, max: 10_000 },
+  maxMissiles: { min: 1, max: 1_000 },
+  collisions: { type: 'boolean' },
+};
+
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export const START_CONFIG_KEYS = Object.keys(START) as (keyof StartConfig)[];
@@ -466,6 +491,7 @@ export function validateSimConfig(input: unknown): SimConfig {
     input: validateInput(input['input']),
     camera: validateSection<CameraConfig>('camera', input['camera'], CAMERA),
     hud: validateSection<HudConfig>('hud', input['hud'], HUD),
+    world: validateSection<WorldConfig>('world', input['world'], WORLD),
   };
   if (!HEX_COLOR.test(result.hud.color)) {
     throw new ConfigError('"hud.color" must be a hex colour like "#9cff9c"');
@@ -494,7 +520,7 @@ export interface Overrides {
 
 /**
  * Reads optional overrides from a URL query string, e.g. `?lat=32&lon=34.8`,
- * `?aircraft=trainer`, `?graphics=low`, `?buildings=1`, `?units=imperial`.
+ * `?aircraft=trainer`, `?mission=coastal-patrol`, `?graphics=low`, `?buildings=1`, `?units=imperial`.
  * Unknown keys are ignored; known numeric keys with non-numeric values are rejected.
  */
 export function parseOverrides(search: string): Overrides {
@@ -504,7 +530,7 @@ export function parseOverrides(search: string): Overrides {
   for (const key of START_CONFIG_KEYS) {
     const raw = params.get(key);
     if (raw === null) continue;
-    if (key === 'aircraft' || key === 'time') {
+    if (key === 'aircraft' || key === 'time' || key === 'mission') {
       start[key] = raw;
       continue;
     }

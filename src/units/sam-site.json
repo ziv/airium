@@ -1,0 +1,8 @@
+{
+  "name": "SAM site",
+  "kind": "ground-unit",
+  "radius": 12,
+  "health": 120,
+  "speed": 0,
+  "model": { "uri": "models/sam.glb", "scale": 1 }
+}

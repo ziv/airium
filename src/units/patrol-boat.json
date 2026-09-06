@@ -1,0 +1,8 @@
+{
+  "name": "Patrol boat",
+  "kind": "ship",
+  "radius": 18,
+  "health": 250,
+  "speed": 12,
+  "model": { "uri": "models/boat.glb", "scale": 1 }
+}

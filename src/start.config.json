@@ -10,7 +10,8 @@
     "speed": 200,
     "fov": 60,
     "aircraft": "f16",
-    "time": ""
+    "time": "",
+    "mission": "coastal-patrol"
   },
   "ground": {
     "maxLandingSinkRate": 4,
@@ -163,5 +164,12 @@
     "flashHz": 3,
     "ladderSpacing": 5,
     "ladderRange": 30
+  },
+  "world": {
+    "lodDistance": 8000,
+    "wreckRemoveSeconds": 30,
+    "maxBullets": 400,
+    "maxMissiles": 32,
+    "collisions": true
   }
 }

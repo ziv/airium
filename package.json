@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "model": "node scripts/make-jet-model.mjs"
+    "model": "node scripts/make-models.mjs"
   },
   "dependencies": {
     "cesium": "^1.145.0"

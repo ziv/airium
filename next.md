@@ -167,24 +167,25 @@ right conditions.
 Goal: the world contains many simulated objects besides the player, updated by the same
 fixed-step loop and rendered by Cesium.
 
-- [ ] `src/sim/world.ts`: `World` holding a list of entities, each with `id`, `kind`
+- [x] `src/sim/world.ts`: `World` holding a list of entities, each with `id`, `kind`
       (`aircraft`, `missile`, `bullet`, `ground-unit`, `ship`, `waypoint`), `faction`
       (player, friendly, hostile, neutral), position (lat/lon/height), attitude, velocity,
       `health`, `alive`, and a per-kind update function. Deterministic step order.
-- [ ] Aircraft entities reuse `physics.step` with their own `FlightModel`; the player is just
+- [x] Aircraft entities reuse `physics.step` with their own `FlightModel`; the player is just
       the entity with `controlledByPlayer`.
-- [ ] Ground units placed by lat/lon and clamped to terrain (`sampleTerrainMostDetailed` at
+- [x] Ground units placed by lat/lon and clamped to terrain (`sampleTerrainMostDetailed` at
       spawn, `loadedGroundHeight` later); ships at sea level; both may follow waypoints.
-- [ ] Renderer `src/render/entities.ts`: sim ↔ Cesium sync each frame using
+- [x] Renderer `src/render/entities.ts`: sim ↔ Cesium sync each frame using
       `Entity` models (near) and billboards/points (far) with distance-based LOD; hostile /
       friendly colouring; remove wrecks after a delay. Object pools for bullets and missiles.
-- [ ] Collision: sphere-sphere between aircraft/missiles, terrain contact for every entity
+- [x] Collision: sphere-sphere between aircraft/missiles, terrain contact for every entity
       (reuse ground logic), optional building contact via `scene.sampleHeight`/`clampToHeight`
-      when OSM Buildings is on.
-- [ ] Spawn descriptions in a JSON format (position, heading, speed, type, faction, waypoints,
-      behaviour) validated like `sim-config.ts`; used by missions (M10).
-- [ ] Performance: profile with 30 aircraft + 200 bullets; sim step under 2 ms.
-- [ ] Unit tests: entity update ordering, spawn parsing/validation, collision detection,
+      when OSM Buildings is on. (Building contact not done; sphere and terrain contact are.)
+- [x] Spawn descriptions in a JSON format (position, heading, speed, type, faction, waypoints,
+      behaviour) validated like `sim-config.ts`; used by missions (M10). (`src/sim/spawn.ts`,
+      `src/missions/coastal-patrol.json`, `start.mission` / `?mission=`.)
+- [x] Performance: profile with 30 aircraft + 200 bullets; sim step under 2 ms.
+- [x] Unit tests: entity update ordering, spawn parsing/validation, collision detection,
       terrain clamping fallback.
 
 Acceptance: a mission file spawns a flight of enemy jets in a holding pattern and a SAM site on

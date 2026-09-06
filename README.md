@@ -54,6 +54,31 @@ camera, so they stay correct in the chase and orbit views too. A hard landing, a
 a nose-first impact or a gear-up landing freezes the sim with **CRASHED** and the reason;
 press `R`. The backtick key opens the debug panel with every raw number, fps and the key legend.
 
+## Missions and the world
+
+`start.mission` (or `?mission=coastal-patrol`) names a mission file in `src/missions/`. A mission
+is a list of entity spawns validated at load time:
+
+| Kind                  | Fields                                                                                                                                                                        |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aircraft`            | `id`, `name`, `type` (`src/aircraft`), `faction` (`friendly`/`hostile`/`neutral`), `lat`, `lon`, `height` (above terrain; 0 = on the wheels), `heading`, `speed`, `behaviour` |
+| `ground-unit`, `ship` | `id`, `name`, `type` (`src/units`), `faction`, `lat`, `lon`, `heading`, `route` (`{ loop, waypoints }` or `null`)                                                             |
+| `waypoint`            | `id`, `name`, `lat`, `lon`, `height` (above the ellipsoid); the HUD heading caret points at the first one                                                                     |
+
+Aircraft behaviours: `{ "mode": "straight" }` holds the spawn heading, altitude and speed;
+`{ "mode": "orbit", "lat", "lon", "radius", "altitude", "speed", "clockwise" }` flies a circle;
+`{ "mode": "waypoints", "loop", "waypoints": [{ "lat", "lon", "height", "speed"? }] }` follows a
+route. Altitudes in behaviours and waypoints are metres above the ellipsoid. AI aircraft fly the
+same flight model as the player through a simple autopilot (`src/sim/autopilot.ts`); ground units
+are clamped to the terrain and ships to sea level, and both drive their routes at the unit type's
+speed. Entities collide as spheres (`radius` in the unit type; aircraft 8 m): flying into one
+crashes both. Near the player entities draw as glTF models, beyond `world.lodDistance` as
+faction-coloured points (red hostile, blue friendly). Wrecks disappear after
+`world.wreckRemoveSeconds`. Bullets and missiles are pooled (`world.maxBullets`, `maxMissiles`).
+
+Unit types live in `src/units/*.json` (`name`, `kind`, `radius`, `health`, `speed`, `model`) and
+are registered in `src/units/index.ts`.
+
 ## Configuration
 
 `src/start.config.json` holds the world settings; each aircraft type is a file in `src/aircraft/`
@@ -91,10 +116,10 @@ scale with dynamic pressure up to `referenceDynamicPressure`. Position is integr
 in a local East-North-Up frame (fine below about 80° latitude).
 
 Any `start` key can be overridden from the URL for quick experiments, along with the graphics
-preset, buildings and HUD units:
+preset, buildings, HUD units and mission:
 
 ```
-http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&speed=250&aircraft=trainer&graphics=low&buildings=1&units=metric
+http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&speed=250&aircraft=trainer&graphics=low&buildings=1&units=metric&mission=coastal-patrol
 ```
 
 ## Deploying to GitHub Pages
@@ -130,7 +155,7 @@ Cesium is bundled from npm; its runtime files (Workers, Assets, Widgets, ThirdPa
 | `npm run lint`         | Lint with ESLint                    |
 | `npm run format`       | Format with Prettier                |
 | `npm run format:check` | Verify formatting                   |
-| `npm run model`        | Regenerate `public/models/jet.glb`  |
+| `npm run model`        | Regenerate `public/models/*.glb`    |
 
 See [plans.md](plans.md) for the milestones done so far and [next.md](next.md) for the roadmap;
 assets are listed in [CREDITS.md](CREDITS.md).
