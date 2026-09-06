@@ -1,20 +1,10 @@
-import {
-  Cartesian3,
-  Cartographic,
-  Math as CesiumMath,
-  PerspectiveFrustum,
-  sampleTerrainMostDetailed,
-  type TerrainProvider,
-  type Viewer,
-} from 'cesium';
-import { hprFromAttitude } from './attitude';
-import type { AircraftState } from './physics';
+import { Cartographic, sampleTerrainMostDetailed, type TerrainProvider, type Viewer } from 'cesium';
 
 /**
  * Returns the terrain surface height (metres above the WGS84 ellipsoid) at a
  * point. Providers without tile availability (the plain ellipsoid) have no
  * relief, so the ground is at 0. A failed sample also falls back to 0 with a
- * warning rather than leaving the camera unplaced.
+ * warning rather than leaving the aircraft unplaced.
  */
 export async function sampleGroundHeight(
   terrainProvider: TerrainProvider,
@@ -55,19 +45,4 @@ export function loadedGroundHeight(viewer: Viewer, lat: number, lon: number): nu
   const h = viewer.scene.globe.getHeight(Cartographic.fromDegrees(lon, lat));
   if (h === undefined || !Number.isFinite(h)) return undefined;
   return h >= MIN_PLAUSIBLE_GROUND && h <= MAX_PLAUSIBLE_GROUND ? h : undefined;
-}
-
-export function setCameraFov(viewer: Viewer, fovDegrees: number): void {
-  if (viewer.camera.frustum instanceof PerspectiveFrustum) {
-    viewer.camera.frustum.fov = CesiumMath.toRadians(fovDegrees);
-  }
-}
-
-/** Cockpit view: the camera sits at the aircraft and shares its attitude. */
-export function placeCamera(viewer: Viewer, state: AircraftState): void {
-  const { heading, pitch, roll } = hprFromAttitude(state.attitude);
-  viewer.camera.setView({
-    destination: Cartesian3.fromDegrees(state.lon, state.lat, state.height),
-    orientation: { heading, pitch, roll },
-  });
 }

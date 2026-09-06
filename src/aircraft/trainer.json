@@ -1,0 +1,58 @@
+{
+  "name": "Light piston trainer",
+  "airframe": {
+    "emptyMass": 900,
+    "fuelCapacity": 150,
+    "wingArea": 16,
+    "liftCoefficient": 0.4,
+    "dragCoefficient": 0.03
+  },
+  "engine": {
+    "militaryThrust": 3000,
+    "afterburnerThrust": 0,
+    "idleFuelFlow": 0.002,
+    "militaryFuelFlow": 0.01,
+    "afterburnerFuelFlow": 0
+  },
+  "aerodynamics": {
+    "liftSlope": 5,
+    "stallAngle": 15,
+    "zeroLiftAngle": 30,
+    "inducedDragFactor": 0.05,
+    "minAeroSpeed": 1,
+    "machDragOnset": 0.6,
+    "machDragPeak": 0.9,
+    "machDragPeakFactor": 4
+  },
+  "limits": {
+    "maxLoadFactor": 3.8,
+    "minLoadFactor": -1.5,
+    "maxAngleOfAttack": 15,
+    "maxMach": 0.5,
+    "maxAirspeed": 85
+  },
+  "controls": {
+    "rollRate": 60,
+    "pitchRate": 30,
+    "yawRate": 20,
+    "responseTime": 0.6,
+    "releaseTime": 0.8,
+    "throttleStep": 0.05,
+    "referenceDynamicPressure": 1200
+  },
+  "gear": {
+    "transitTime": 0,
+    "dragCoefficient": 0,
+    "maxSpeed": 200,
+    "brakeDeceleration": 2
+  },
+  "airbrake": {
+    "dragCoefficient": 0
+  },
+  "model": {
+    "uri": "models/jet.glb",
+    "scale": 0.6,
+    "cockpitForward": 1.5,
+    "cockpitUp": 0.6
+  }
+}

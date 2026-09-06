@@ -3,37 +3,14 @@
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6InRkVHBUbVg2Z2JCLTRvZkwiLCJqdGkiOiJkMTJmMGMyNS0yYzg3LTQ0ODktYjQ1MS0zYWM4ZjVkMTBiM2MiLCJpZCI6MTg4MjAwLCJzdWIiOiJ6aXYiLCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoieml2LmdpdGh1Yi5pbyIsImlhdCI6MTc4ODQ0ODg5Mn0.6PX1oQos1cQSz6pTuPUsHdj3apZLL5U4PbFNZJLqrDg"
   },
   "start": {
-    "lat": 47.2692,
-    "lon": 11.2,
+    "lat": 32.1021052467175,
+    "lon": 34.80369669212359,
     "height": 2000,
     "heading": 90,
-    "speed": 100,
-    "fov": 60
-  },
-  "aircraft": {
-    "weight": 1100,
-    "wingArea": 16,
-    "liftCoefficient": 0.4,
-    "dragCoefficient": 0.03,
-    "maxThrust": 3000
-  },
-  "aerodynamics": {
-    "liftSlope": 5,
-    "stallAngle": 15,
-    "zeroLiftAngle": 30,
-    "inducedDragFactor": 0.05,
-    "trimLoadFactor": 1,
-    "minAeroSpeed": 1,
-    "stabilityRatePerSpeed": 0.4,
-    "stabilityMaxRate": 15
-  },
-  "controls": {
-    "rollRate": 60,
-    "pitchRate": 30,
-    "yawRate": 20,
-    "responseTime": 0.6,
-    "releaseTime": 0.8,
-    "throttleStep": 0.05
+    "speed": 200,
+    "fov": 60,
+    "aircraft": "f16",
+    "time": ""
   },
   "ground": {
     "maxLandingSinkRate": 4,
@@ -47,10 +24,132 @@
     "gravity": 9.80665,
     "seaLevelAirDensity": 1.225,
     "densityScaleHeight": 8500,
-    "earthRadius": 6371000
+    "earthRadius": 6371000,
+    "seaLevelTemperature": 288.15,
+    "lapseRate": 0.0065,
+    "tropopauseHeight": 11000,
+    "gasConstant": 287.05,
+    "heatCapacityRatio": 1.4
   },
   "simulation": {
     "physicsHz": 120,
-    "maxFrameSeconds": 0.1
+    "maxFrameSeconds": 0.1,
+    "minTimeScale": 0.25,
+    "maxTimeScale": 4,
+    "timeScaleStep": 2
+  },
+  "graphics": {
+    "preset": "medium",
+    "osmBuildings": false,
+    "presets": {
+      "low": {
+        "maximumScreenSpaceError": 4,
+        "tileCacheSize": 200,
+        "preloadTiles": false,
+        "fog": true,
+        "msaaSamples": 1,
+        "fxaa": false,
+        "resolutionScale": 0.75,
+        "lighting": false,
+        "atmosphere": true
+      },
+      "medium": {
+        "maximumScreenSpaceError": 2,
+        "tileCacheSize": 500,
+        "preloadTiles": true,
+        "fog": true,
+        "msaaSamples": 1,
+        "fxaa": true,
+        "resolutionScale": 1,
+        "lighting": true,
+        "atmosphere": true
+      },
+      "high": {
+        "maximumScreenSpaceError": 1.5,
+        "tileCacheSize": 1000,
+        "preloadTiles": true,
+        "fog": true,
+        "msaaSamples": 4,
+        "fxaa": true,
+        "resolutionScale": 1,
+        "lighting": true,
+        "atmosphere": true
+      }
+    }
+  },
+  "input": {
+    "keys": {
+      "rollLeft": ["ArrowLeft"],
+      "rollRight": ["ArrowRight"],
+      "noseUp": ["ArrowDown"],
+      "noseDown": ["ArrowUp"],
+      "yawLeft": ["["],
+      "yawRight": ["]"],
+      "brakes": ["b", "B"],
+      "throttleUp": ["+", "="],
+      "throttleDown": ["-", "_"],
+      "afterburner": ["a", "A"],
+      "gear": ["g", "G"],
+      "airbrake": ["s", "S"],
+      "reset": ["r", "R"],
+      "pause": ["p", "P"],
+      "timeFaster": ["."],
+      "timeSlower": [","],
+      "camera": ["c", "C"],
+      "cameraCockpit": ["F1"],
+      "cameraChase": ["F2"],
+      "cameraOrbit": ["F3"],
+      "cameraFlyby": ["F4"],
+      "mouseFlight": ["m", "M"],
+      "buildings": ["o", "O"],
+      "debug": ["`"]
+    },
+    "keyboard": {
+      "axisRampTime": 0.7,
+      "axisReleaseTime": 0.1
+    },
+    "gamepad": {
+      "deadZone": 0.12,
+      "curve": 1.5,
+      "afterburnerAbove": 0.97,
+      "throttleRate": 0.5,
+      "invertPitch": false,
+      "axes": {
+        "roll": 0,
+        "pitch": 1,
+        "yaw": 2,
+        "throttle": -1
+      },
+      "buttons": {
+        "throttleUp": 5,
+        "throttleDown": 4,
+        "afterburner": 0,
+        "gear": 3,
+        "brakes": 6,
+        "airbrake": 2,
+        "camera": 9,
+        "reset": 8,
+        "pause": 16
+      }
+    },
+    "mouse": {
+      "lookSensitivity": 0.25,
+      "lookReturnTime": 0.3,
+      "orbitSensitivity": 0.3,
+      "zoomStep": 1.15,
+      "flightSensitivity": 0.4,
+      "mouseFlight": false
+    }
+  },
+  "camera": {
+    "chaseDistance": 35,
+    "chaseHeight": 8,
+    "chaseSmoothing": 0.25,
+    "orbitDistance": 40,
+    "orbitMinDistance": 8,
+    "orbitMaxDistance": 2000,
+    "flybyLead": 4,
+    "flybyMaxDistance": 1500,
+    "nearPlane": 0.5
   }
 }
