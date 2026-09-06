@@ -35,3 +35,7 @@ body,
   color: #ff6b6b;
   border-color: rgba(255, 107, 107, 0.5);
 }
+
+#hud.warning {
+  border-color: rgba(255, 200, 80, 0.6);
+}

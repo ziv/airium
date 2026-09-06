@@ -1,0 +1,58 @@
+{
+  "name": "F-16 class multirole fighter",
+  "airframe": {
+    "emptyMass": 8500,
+    "fuelCapacity": 3200,
+    "wingArea": 27.9,
+    "liftCoefficient": 0.1,
+    "dragCoefficient": 0.02
+  },
+  "engine": {
+    "militaryThrust": 76000,
+    "afterburnerThrust": 127000,
+    "idleFuelFlow": 0.1,
+    "militaryFuelFlow": 1.6,
+    "afterburnerFuelFlow": 7.4
+  },
+  "aerodynamics": {
+    "liftSlope": 3.5,
+    "stallAngle": 25,
+    "zeroLiftAngle": 45,
+    "inducedDragFactor": 0.13,
+    "minAeroSpeed": 1,
+    "machDragOnset": 0.85,
+    "machDragPeak": 1.05,
+    "machDragPeakFactor": 2.5
+  },
+  "limits": {
+    "maxLoadFactor": 9,
+    "minLoadFactor": -3,
+    "maxAngleOfAttack": 25,
+    "maxMach": 2,
+    "maxAirspeed": 420
+  },
+  "controls": {
+    "rollRate": 240,
+    "pitchRate": 40,
+    "yawRate": 15,
+    "responseTime": 0.15,
+    "releaseTime": 0.1,
+    "throttleStep": 0.05,
+    "referenceDynamicPressure": 5000
+  },
+  "gear": {
+    "transitTime": 3,
+    "dragCoefficient": 0.02,
+    "maxSpeed": 155,
+    "brakeDeceleration": 3
+  },
+  "airbrake": {
+    "dragCoefficient": 0.04
+  },
+  "model": {
+    "uri": "models/jet.glb",
+    "scale": 1,
+    "cockpitForward": 4,
+    "cockpitUp": 0.9
+  }
+}
