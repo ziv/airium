@@ -30,7 +30,7 @@ is a small input and a long press a full one. The defaults are:
 | `G`               | Landing gear up/down                                             |
 | `S`               | Airbrake in/out                                                  |
 | `B` (hold)        | Wheel brakes                                                     |
-| `C`, `F1`–`F4`    | Next camera; cockpit / chase / orbit / fly-by                    |
+| `C`, `F1`–`F5`    | Next camera; cockpit / chase / orbit / fly-by / padlock          |
 | Right drag        | Look around in the cockpit (returns to the boresight)            |
 | Left drag / wheel | Rotate / zoom the orbit camera                                   |
 | `M`               | Mouse flight (pointer position = stick) on/off                   |
@@ -43,7 +43,8 @@ is a small input and a long press a full one. The defaults are:
 | `Enter`           | Cycle gun → IR → radar → bomb → rocket                           |
 | `1` / `2` / `3`   | Select gun / IR missile / radar missile                          |
 | `4`               | Select bombs; press again for rockets                            |
-| `T` / `Tab`       | Cycle hostile targets, nearest first                             |
+| `W`               | Next navigation steerpoint                                       |
+| `T` / `Tab`       | Cycle detected hostile radar tracks, nearest first               |
 | `L`               | Lock/unlock the selected target                                  |
 | `X`               | Release one chaff/flare packet                                   |
 
@@ -113,8 +114,8 @@ supports all weapons. Set throttle before practising; the default flight starts 
   repeatedly while the trigger is held and follow their motor-driven ballistic trajectory.
 - **Defence:** `X` releases one flare and one chaff cartridge when available, at most one
   packet every 0.5 seconds. Their chance of breaking seeker tracking depends on seeker type,
-  aspect and distance. They do not guarantee a miss. The simple incoming-missile cue is
-  omniscient for now; radar, LOS and an RWR belong to M8. Enemy AI weapon employment is M9;
+  aspect and distance. They do not guarantee a miss. The RWR shows incoming missile direction when terrain visibility permits.
+  Enemy AI weapon employment is M9;
   incoming missiles and successful flare defence are covered by the headless combat tests.
 
 The HUD shows remaining weapons, flares/chaff, hull health, kills and damaged systems.
@@ -174,6 +175,36 @@ preset, buildings, HUD units and mission:
 ```
 http://localhost:5173/?lat=32.0&lon=34.8&height=900&heading=180&speed=250&aircraft=trainer&graphics=low&buildings=1&units=metric&mission=coastal-patrol
 ```
+
+## Sensors and targeting (Milestone 8)
+
+Radar scans at 4 Hz inside ±60° azimuth and ±30° elevation in the aircraft body frame.
+`src/sensors/sensors.json` configures scan limits, rate, range (80 km for an 8 m radius
+reference target), size scaling and optional terrain LOS. Terrain is sampled every 500 m
+with Earth curvature included; unloaded terrain is permissive, so a newly loaded ridge
+can remove a track at the next scan. This is a simplified size-based radar model.
+
+The lower-left B-scope shows range lines and coloured contacts: red hostile, blue friendly,
+white neutral. `T`/`Tab` cycles detected hostiles nearest first; `L` locks or unlocks.
+Only hostile tracks can become weapon targets. Radar locks drop outside the scan volume
+or behind terrain. IR missiles can acquire visible hostiles in their seeker cone without
+radar; a radar lock slaves the seeker within its launch envelope. Acquisition produces a
+pulsed tone after keyboard/pointer input unlocks audio.
+
+`F5` selects padlock (also included in `C` cycling). It follows the last designated target
+through a merge, even after radar loses it, and returns to boresight when the target dies.
+This visual camera memory does not preserve a missile radar lock. `W` cycles mission
+steerpoints; the heading caret and readout show bearing and distance.
+
+The RWR uses nose-relative bearings: **S** search, **L** radar lock, **M** incoming missile.
+Lock and missile warnings have distinct pulsed tones; full audio styling remains M11.
+Every aircraft emits search radar. Opponent lock commands use the same track checks as
+the player; autonomous enemy locking/firing remains M9. Headless tests exercise reciprocal
+locks, 40 km detection, launches at Rmax, terrain masking, IFF and padlock geometry.
+Chrome verification confirmed radar selection/lock and launch cues, a radar-missile kill,
+padlock target centering, RWR search bearings, and waypoint cycling. A radar/fuel-readout
+overlap found during that check was fixed. Reciprocal lock and incoming-missile warnings
+remain covered headlessly; audio was not verified by listening.
 
 ## Deploying to GitHub Pages
 

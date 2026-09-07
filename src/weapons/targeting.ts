@@ -1,4 +1,4 @@
-/** Basic visual target designation for M7. Full radar/LOS belongs to M8. */
+/** Shared IFF, seeker geometry, launch envelopes and countermeasure math. */
 import { isAircraft, type AircraftEntity, type Entity, type Faction } from '../sim/entities';
 import { enuOffset } from '../sim/geo';
 import { clamp, dot, length, normalize, toRadians, type Vec3 } from '../sim/math3d';

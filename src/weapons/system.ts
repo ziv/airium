@@ -1,3 +1,4 @@
+import { cycleTrack } from '../sensors/system';
 import {
   type AircraftEntity,
   type Entity,
@@ -105,19 +106,31 @@ export class CombatSystem {
   /** IR can acquire a boresight target without a radar lock. Radar always requires designation. */
   missileTarget(owner: AircraftEntity, id: WeaponId): Entity | undefined {
     const w = owner.weapons;
-    if (w.lockId) return this.target(owner);
+    if (w.lockId && this.world.sensors.targets(owner).some((t) => t.id === w.lockId)) {
+      const target = this.target(owner);
+      if (id !== 'ir') return target;
+      if (
+        target &&
+        launchEnvelope(owner, target, this.cfg.types.ir, true, this.R).allowed &&
+        this.world.sensors.visible(owner, target)
+      )
+        return target;
+    }
     if (id !== 'ir') return undefined;
     const cfg = this.cfg.types.ir;
     const selected = this.target(owner);
     if (
       selected &&
       isAircraft(selected) &&
+      this.world.sensors.visible(owner, selected) &&
+      length(enuOffset(owner, selected, this.R)) <= cfg.maxRange &&
       inCone(owner.attitude.forward, enuOffset(owner, selected, this.R), cfg.seekerCone)
     )
       return selected;
     return targetList(owner, this.world.entities, this.R, cfg.maxRange).find(
       (e) =>
         isAircraft(e) &&
+        this.world.sensors.visible(owner, e) &&
         inCone(owner.attitude.forward, enuOffset(owner, e, this.R), cfg.seekerCone),
     );
   }
@@ -134,24 +147,15 @@ export class CombatSystem {
         continue;
       }
       if (command === 'target') {
-        const list = targetList(owner, this.world.entities, this.R, this.cfg.types.radar.maxRange);
-        const index = list.findIndex((e) => e.id === w.targetId);
-        w.targetId = list[(index + 1) % list.length]?.id ?? null;
+        w.targetId = cycleTrack(this.world.sensors.targets(owner), w.targetId);
         w.lockId = null;
       } else if (command === 'lock') {
         if (w.lockId) w.lockId = null;
         else {
           const target = this.target(owner);
-          if (
-            target &&
-            inCone(
-              owner.attitude.forward,
-              enuOffset(owner, target, this.R),
-              this.cfg.types.radar.gimbalLimit,
-            )
-          )
+          if (target && this.world.sensors.targets(owner).some((t) => t.id === target.id))
             w.lockId = target.id;
-          else this.notify(owner, 'SELECT TARGET IN FRONT');
+          else this.notify(owner, 'SELECT RADAR TRACK');
         }
       } else {
         const choices: Partial<Record<WeaponCommand, WeaponId>> = {

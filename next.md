@@ -257,19 +257,32 @@ the pipper's error on a ground target; a missile fired at you can be decoyed wit
 
 Goal: find, lock and track targets; know when you are being targeted.
 
-- [ ] Radar model: scan volume (±60° azimuth, ±30° elevation), max range by target size,
+Implemented in `src/sensors/`, integrated with weapons, the HUD and `F5` padlock.
+Configuration is validated from `src/sensors/sensors.json`. Radar uses 4 Hz scans and
+size-scaled range; loaded terrain samples include curvature (unknown terrain is permissive).
+All aircraft emit radar; actual opponent lock commands and launches are covered headlessly,
+with autonomous employment remaining M9. `W` cycles mission steerpoints. Padlock remembers
+the last designation through radar loss during a merge without retaining a weapon lock.
+Basic IR/RWR tones share the existing audio context; richer sound remains M11.
+Automated acceptance covers 40 km detection, Rmax launch, reciprocal RWR and camera geometry;
+Chrome verification confirmed radar lock and launch cues, a radar-missile kill, padlock
+target centering, RWR search bearings and waypoint cycling. The radar/fuel-readout overlap
+found in Chrome was fixed. Audio was not verified by listening; reciprocal enemy lock and
+incoming-missile warnings remain covered headlessly.
+
+- [x] Radar model: scan volume (±60° azimuth, ±30° elevation), max range by target size,
       update rate, optional terrain line-of-sight check (sample terrain along the ray);
       produces a track list.
-- [ ] Target lock: `T`/`Tab` cycles tracks (nearest first), `L` locks/unlocks (single target
+- [x] Target lock: `T`/`Tab` cycles tracks (nearest first), `L` locks/unlocks (single target
       track); locked target drives the HUD TD box, range/closure/aspect, missile seeker
       slaving and the padlock camera.
-- [ ] IR seeker for IR missiles: boresight acquisition when no radar lock, tone when locked.
-- [ ] Radar display: small B-scope/PPI panel on the HUD (range rings, tracks, lock).
-- [ ] Radar warning receiver: shows bearing of enemy radars that see you, lock warning,
+- [x] IR seeker for IR missiles: boresight acquisition when no radar lock, tone when locked.
+- [x] Radar display: small B-scope/PPI panel on the HUD (range rings, tracks, lock).
+- [x] Radar warning receiver: shows bearing of enemy radars that see you, lock warning,
       missile-launch warning with direction; drives audio cues (M11).
-- [ ] IFF: friendlies never appear as valid weapon targets; colouring on HUD and radar.
-- [ ] Waypoint/steerpoint navigation: HUD caret, distance and bearing, cycle with `W`.
-- [ ] Unit tests: scan-volume membership, track cycling order, LOS blocked by a hill, RWR
+- [x] IFF: friendlies never appear as valid weapon targets; colouring on HUD and radar.
+- [x] Waypoint/steerpoint navigation: HUD caret, distance and bearing, cycle with `W`.
+- [x] Unit tests: scan-volume membership, track cycling order, LOS blocked by a hill, RWR
       bearing.
 
 Acceptance: pick up a bandit at 40 km, lock it, fire a radar missile at Rmax, see the RWR

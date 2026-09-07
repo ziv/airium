@@ -339,6 +339,7 @@ describe('missile guidance and launch envelope', () => {
   });
   it('uses radar datalink until active, then survives launcher unlock', () => {
     const { world, player, target } = setup(vec3(18000, 0, 0));
+    world.sensors.step(flat);
     player.weapons.targetId = target.id;
     player.weapons.lockId = target.id;
     const missile = world.combat.launch(player, 'radar')!;
@@ -349,6 +350,7 @@ describe('missile guidance and launch envelope', () => {
     for (let i = 0; i < 120; i++) world.step(DT, controls, flat);
     expect(missile.guidance).toBe('active');
     const other = setup(vec3(25000, 0, 0));
+    other.world.sensors.step(flat);
     other.player.weapons.lockId = other.target.id;
     const lost = other.world.combat.launch(other.player, 'radar')!;
     other.player.weapons.lockId = null;

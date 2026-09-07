@@ -33,9 +33,15 @@ import type { AircraftState } from '../sim/physics';
 import type { CameraConfig } from '../sim/sim-config';
 import { aircraftPosition, enuFrame, enuPoint, enuVector } from './frames';
 
-export type CameraMode = 'cockpit' | 'chase' | 'orbit' | 'flyby';
+export type CameraMode = 'cockpit' | 'chase' | 'orbit' | 'flyby' | 'padlock';
 
-export const CAMERA_MODES: readonly CameraMode[] = ['cockpit', 'chase', 'orbit', 'flyby'];
+export const CAMERA_MODES: readonly CameraMode[] = [
+  'cockpit',
+  'chase',
+  'orbit',
+  'flyby',
+  'padlock',
+];
 
 /** Where the pilot's eyes are relative to the model origin, metres. */
 export interface CockpitOffset {
@@ -57,7 +63,10 @@ const scratchVector = new Cartesian3();
 
 function orthonormalUp(direction: Vec3, up: Vec3): Vec3 {
   const right = normalize(cross(direction, up));
-  if (length(right) === 0) return normalize(cross(cross(direction, UP), direction));
+  if (length(right) < 1e-6) {
+    const fallback = Math.abs(direction.z) < 0.9 ? UP : vec3(0, 1, 0);
+    return normalize(cross(cross(direction, fallback), direction));
+  }
   return normalize(cross(right, direction));
 }
 
@@ -142,11 +151,11 @@ export class CameraRig {
 
   /** Whether the own-aircraft model should be drawn in this view. */
   get showsOwnAircraft(): boolean {
-    return this.mode !== 'cockpit';
+    return this.mode !== 'cockpit' && this.mode !== 'padlock';
   }
 
   /** `dt` is the real frame time, used for smoothing. */
-  update(state: AircraftState, dt: number, look: Look, orbit: OrbitInput): void {
+  update(state: AircraftState, dt: number, look: Look, orbit: OrbitInput, target?: Vec3): void {
     aircraftPosition(state, this.position);
     enuFrame(this.position, this.frame);
 
@@ -157,6 +166,11 @@ export class CameraRig {
 
     let view: View;
     switch (this.mode) {
+      case 'padlock':
+        view = this.cockpitView(state, { yaw: 0, pitch: 0 });
+        if (target && length(sub(target, view.offset)) > 0.01)
+          view.direction = normalize(sub(target, view.offset));
+        break;
       case 'chase':
         view = this.chaseView(state, dt);
         break;

@@ -93,6 +93,5 @@ export function createViewer(container: HTMLElement, ionToken: string | null): W
   viewer.scene.screenSpaceCameraController.enableInputs = false;
   viewer.creditDisplay.container.style.display = 'none';
 
-
   return { viewer, terrainReady };
 }

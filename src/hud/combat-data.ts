@@ -1,5 +1,6 @@
+import type { Track, Threat } from '../sensors/system';
 import { isProjectile, type AircraftEntity } from '../sim/entities';
-import { enuOffset } from '../sim/geo';
+import { bearing, enuOffset } from '../sim/geo';
 import {
   type Vec3,
   dot,
@@ -17,6 +18,13 @@ import { launchEnvelope } from '../weapons/targeting';
 import type { TargetSymbology } from './hud-data';
 
 export interface CombatHud {
+  tracks: Track[];
+  threats: Threat[];
+  radarRange: number;
+  radarAzimuth: number;
+  radarLock: string | null;
+  radarTarget: string | null;
+  navigation?: { name: string; range: number; bearing: number };
   label: string;
   inventory: string;
   health: number;
@@ -49,16 +57,29 @@ export function buildCombatHud(
     ? (combat.missileTarget(player, w.selected) ?? combat.target(player))
     : combat.target(player);
   const out: CombatHud = {
+    tracks: world.sensors.tracks(player),
+    threats: world.sensors.threats(player),
+    radarRange: world.sensors.cfg.maxRange,
+    radarAzimuth: world.sensors.cfg.azimuth,
+    radarLock: w.lockId,
+    radarTarget: w.targetId,
     label: `${cfg.name}  ${w.ammo[w.selected]}`,
     inventory: `FLR ${w.flare}  CHF ${w.chaff}`,
     health: player.health / player.maxHealth,
     kills: w.kills,
     message: world.time < w.messageUntil ? w.message : '',
     systems: [],
-    incoming: false,
+    incoming: world.sensors.threats(player).some((t) => t.level === 'launch'),
     shoot: false,
     destroyed: !!player.killedBy,
   };
+  const waypoint = world.sensors.waypoint();
+  if (waypoint)
+    out.navigation = {
+      name: waypoint.name,
+      range: length(enuOffset(player, waypoint, R)),
+      bearing: toDegrees(bearing(player, waypoint, R)),
+    };
   if (player.systems.engine < 0.9)
     out.systems.push(`ENGINE ${Math.round(player.systems.engine * 100)}%`);
   if (player.systems.controls < 0.9)
@@ -126,7 +147,6 @@ export function buildCombatHud(
   }
   for (const e of world.entities) {
     if (!isProjectile(e) || !e.alive || e.kind !== 'missile') continue;
-    if (e.targetId === player.id && e.guidance !== 'lost') out.incoming = true;
     if (e.ownerId !== player.id) continue;
     const t = e.targetId ? world.get(e.targetId) : undefined;
     const r = t ? enuOffset(e, t, R) : null;

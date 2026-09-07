@@ -1,0 +1,9 @@
+{
+  "azimuth": 60,
+  "elevation": 30,
+  "maxRange": 80000,
+  "referenceRadius": 8,
+  "updateHz": 4,
+  "terrainLOS": true,
+  "sampleSpacing": 500
+}

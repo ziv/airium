@@ -16,7 +16,7 @@ import { EntityRenderer } from './render/entities';
 import { Buildings, applyGraphicsPreset, setTimeOfDay, tuneForFlight } from './render/graphics';
 import { loadedGroundHeight, sampleGroundHeight, sampleGroundHeights } from './render/terrain';
 import { type AircraftEntity, type Entity, createAircraftEntity } from './sim/entities';
-import { bearing } from './sim/geo';
+import { bearing, enuOffset } from './sim/geo';
 import { toDegrees } from './sim/math3d';
 import {
   type AircraftState,
@@ -149,7 +149,7 @@ async function main(): Promise<void> {
     const forces = computeForces(shown, player.model);
     const warnings = warningsFor(shown, forces, player.model);
     const combat = buildCombatHud(player, world, terrain);
-    const firstWaypoint = world.waypoints()[0];
+    const firstWaypoint = world.sensors.waypoint();
     hud.draw(
       buildHudData(shown, forces, warnings, model, sim.hud, {
         pose: rig.pose(),
@@ -176,6 +176,7 @@ async function main(): Promise<void> {
   let state = player.state;
   /** State one physics step behind, for render interpolation. */
   let previous = state;
+  let padlockId: string | null = null;
   own.update(state);
   rig.update(state, 0, input.mouse.look(), input.mouse.takeOrbit());
   hud.visible = true;
@@ -206,6 +207,7 @@ async function main(): Promise<void> {
 
   const reset = () => {
     input.reset(startsOnGround);
+    padlockId = null;
     player = populate(startGroundHeight);
     state = player.state;
     previous = state;
@@ -265,6 +267,12 @@ async function main(): Promise<void> {
         case 'cameraOrbit':
           rig.setMode('orbit');
           break;
+        case 'waypoint':
+          world.sensors.cycleWaypoint();
+          break;
+        case 'cameraPadlock':
+          rig.setMode('padlock');
+          break;
         case 'cameraFlyby':
           rig.setMode('flyby');
           break;
@@ -302,6 +310,7 @@ async function main(): Promise<void> {
       console.info('[airium] terrain settled, ground at start:', startGroundHeight);
     }
 
+    padlockId = world.combat.target(player)?.id ?? padlockId;
     const controls = input.controls();
     if (clock.paused || !player.alive) input.consumeFirePress();
     const steps = player.alive ? clock.advance(dt) : 0;
@@ -316,13 +325,28 @@ async function main(): Promise<void> {
       }
     }
     weaponAudio.play(world.combat.takeEvents(), PLAYER_ID);
+    weaponAudio.sensors(
+      !clock.paused &&
+        player.alive &&
+        player.weapons.selected === 'ir' &&
+        !!world.combat.missileTarget(player, 'ir'),
+      clock.paused || !player.alive ? [] : world.sensors.threats(player),
+    );
 
     // Draw a fraction of a step behind so motion is smooth regardless of how
     // many physics steps this frame happened to contain.
     const shown = player.alive ? interpolateState(previous, state, clock.alpha) : state;
     own.update(shown);
     entities.update(world, PLAYER_ID, earthRadius);
-    rig.update(shown, dt, input.mouse.look(), input.mouse.takeOrbit());
+    padlockId = world.combat.target(player)?.id ?? padlockId;
+    const padlock = padlockId ? world.get(padlockId) : undefined;
+    rig.update(
+      shown,
+      dt,
+      input.mouse.look(),
+      input.mouse.takeOrbit(),
+      padlock?.alive ? enuOffset(shown, padlock, earthRadius) : undefined,
+    );
     drawHud(shown, controls);
   });
 }

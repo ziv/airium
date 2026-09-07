@@ -5,6 +5,7 @@
  * terrain, projectiles fly ballistically, then collisions are resolved and
  * wrecks expire. Pure TypeScript, no Cesium.
  */
+import { SensorSystem } from '../sensors/system';
 import { autopilot } from './autopilot';
 import { aircraftTarget, surfaceMotion } from './behaviour';
 import { findCollisions } from './collision';
@@ -56,6 +57,7 @@ export class World {
   private readonly order = new Map<string, number>();
   private projectileCounter = 0;
   readonly combat: CombatSystem;
+  readonly sensors: SensorSystem;
 
   constructor(
     readonly env: WorldEnvironment,
@@ -63,6 +65,7 @@ export class World {
     weapons: WeaponsConfig = WEAPONS,
   ) {
     this.combat = new CombatSystem(this, weapons);
+    this.sensors = new SensorSystem(this);
   }
 
   get entities(): readonly Entity[] {
@@ -110,6 +113,7 @@ export class World {
     this.sequence = 0;
     this.projectileCounter = 0;
     this.combat.reset();
+    this.sensors.reset();
   }
 
   /** Update order: by kind, then by insertion. */
@@ -172,6 +176,7 @@ export class World {
       if (e.alive && !isProjectile(e))
         previous.set(e.id, { lat: e.lat, lon: e.lon, height: e.height });
     this.time += dt;
+    this.sensors.step(terrain);
     this.combat.step(dt);
 
     for (const e of this.list) {

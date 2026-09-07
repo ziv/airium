@@ -93,6 +93,7 @@ export class HudCanvas {
     this.drawFlightPath(d, vp);
     this.drawTarget(d, vp);
     this.drawCombat(d, vp);
+    this.drawSensors(d);
     this.drawHeadingTape(d);
     this.drawAirspeedTape(d);
     this.drawAltitudeTape(d);
@@ -346,6 +347,75 @@ export class HudCanvas {
     }
   }
 
+  private drawSensors(d: HudData): void {
+    const c = d.combat;
+    if (!c) return;
+    const ctx = this.ctx,
+      size = Math.min(180, this.width * 0.23, this.height * 0.25);
+    const x = 20,
+      y = this.height - size - 55;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 12, 18, 0.7)';
+    ctx.fillRect(x - 8, y - 25, size + 16, size + 55);
+    this.font(0.75);
+    ctx.fillStyle = this.cfg.color;
+    ctx.strokeRect(x, y, size, size);
+    this.text(`RADAR ${(c.radarRange / 1000).toFixed(0)} KM`, x, y - 10);
+    ctx.globalAlpha *= 0.45;
+    for (let i = 1; i < 4; i++)
+      this.line({ x, y: y + (size * i) / 4 }, { x: x + size, y: y + (size * i) / 4 });
+    this.line({ x: x + size / 2, y }, { x: x + size / 2, y: y + size });
+    ctx.globalAlpha = this.cfg.brightness;
+    for (const t of c.tracks) {
+      const px = x + size * (0.5 + toDegrees(t.azimuth) / (2 * c.radarAzimuth));
+      const py = y + size * (1 - t.range / c.radarRange);
+      ctx.strokeStyle = ctx.fillStyle =
+        t.faction === 'hostile' ? '#ff8080' : t.faction === 'neutral' ? '#dddddd' : '#70d9ff';
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+      if (t.id === c.radarTarget || t.id === c.radarLock) ctx.strokeRect(px - 6, py - 6, 12, 12);
+      if (t.id === c.radarLock) this.text('L', px + 9, py);
+    }
+    ctx.fillStyle = ctx.strokeStyle = this.cfg.color;
+    this.text(`−${c.radarAzimuth}°     B-SCOPE     +${c.radarAzimuth}°`, x, y + size + 18);
+    const rx = this.width - 75,
+      ry = this.height * 0.64,
+      radius = 45;
+    ctx.beginPath();
+    ctx.arc(rx, ry, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    this.text('RWR', rx, ry + radius + 18, 'center');
+    this.text('↑', rx, ry, 'center');
+    for (const t of c.threats) {
+      ctx.fillStyle =
+        t.level === 'launch' ? '#ff6666' : t.level === 'lock' ? '#ffd166' : this.cfg.color;
+      this.text(
+        t.level === 'launch' ? 'M' : t.level === 'lock' ? 'L' : 'S',
+        rx + Math.sin(t.bearing) * radius,
+        ry - Math.cos(t.bearing) * radius,
+        'center',
+      );
+    }
+    if (c.threats.some((t) => t.level === 'lock') && flashOn(d.time, 2))
+      this.text('RADAR LOCK', this.width / 2, this.height * 0.21, 'center');
+    ctx.fillStyle = this.cfg.color;
+    if (c.navigation) {
+      const n = c.navigation;
+      const distance =
+        d.units === 'imperial'
+          ? `${(n.range / 1852).toFixed(1)} NM`
+          : `${(n.range / 1000).toFixed(1)} KM`;
+      this.text(
+        `STPT ${n.name}  ${Math.round(n.bearing).toString().padStart(3, '0')}°  ${distance}`,
+        this.width / 2,
+        this.height * 0.13,
+        'center',
+      );
+    }
+    ctx.restore();
+  }
+
   // ---- tapes --------------------------------------------------------------
 
   private drawHeadingTape(d: HudData): void {
@@ -467,7 +537,8 @@ export class HudCanvas {
 
   private drawEngineAndFuel(d: HudData): void {
     const { width: w, height: h } = this;
-    const x = w * 0.06;
+    const radarSize = Math.min(180, w * 0.23, h * 0.25);
+    const x = d.combat ? radarSize + 48 : w * 0.06;
     const y = h * 0.86;
     this.font(1);
     this.text(
