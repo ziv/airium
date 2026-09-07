@@ -91,6 +91,8 @@ export function createViewer(container: HTMLElement, ionToken: string | null): W
 
   // The simulation owns the camera; disable mouse/touch camera navigation.
   viewer.scene.screenSpaceCameraController.enableInputs = false;
+  viewer.creditDisplay.container.style.display = 'none';
+
 
   return { viewer, terrainReady };
 }
