@@ -1,3 +1,4 @@
+import { validateAISpec, type AISpec } from '../ai/config';
 /**
  * Mission spawn format: which entities exist when a mission starts. Parsed
  * and validated like the world configuration; turned into entities once the
@@ -40,6 +41,7 @@ export interface RouteSpec {
 }
 
 interface SpawnBase {
+  ai?: AISpec;
   id: string;
   name: string;
   lat: number;
@@ -163,8 +165,11 @@ function validateEntity(path: string, input: unknown, known: KnownTypes): Entity
   delete withoutName['name'];
   switch (kind as (typeof KINDS)[number]) {
     case 'aircraft': {
-      const { behaviour, ...rest } = withoutName;
-      const head = validateSection<Omit<AircraftSpawn, 'behaviour' | 'name'>>(path, rest, {
+      const { behaviour, ai, ...rest } = withoutName;
+      const aiSpec = ai === undefined ? undefined : validateAISpec(ai, `${path}.ai`);
+      if (aiSpec && aiSpec.role !== 'combat' && aiSpec.role !== 'wingman')
+        throw new ConfigError(`${path}: aircraft AI must be combat or wingman`);
+      const head = validateSection<Omit<AircraftSpawn, 'behaviour' | 'name' | 'ai'>>(path, rest, {
         id: { type: 'string' },
         kind: { type: 'enum', values: ['aircraft'] },
         type: { type: 'enum', values: known.aircraft },
@@ -178,13 +183,17 @@ function validateEntity(path: string, input: unknown, known: KnownTypes): Entity
       return {
         ...head,
         name: name ?? head.id,
+        ...(aiSpec ? { ai: aiSpec } : {}),
         behaviour: validateBehaviour(`${path}.behaviour`, behaviour),
       };
     }
     case 'ground-unit':
     case 'ship': {
-      const { route, ...rest } = withoutName;
-      const head = validateSection<Omit<UnitSpawn, 'route' | 'name'>>(path, rest, {
+      const { route, ai, ...rest } = withoutName;
+      const aiSpec = ai === undefined ? undefined : validateAISpec(ai, `${path}.ai`);
+      if (aiSpec && aiSpec.role !== 'sam' && aiSpec.role !== 'aaa')
+        throw new ConfigError(`${path}: surface AI must be sam or aaa`);
+      const head = validateSection<Omit<UnitSpawn, 'route' | 'name' | 'ai'>>(path, rest, {
         id: { type: 'string' },
         kind: { type: 'enum', values: ['ground-unit', 'ship'] },
         type: { type: 'enum', values: known.units },
@@ -193,10 +202,15 @@ function validateEntity(path: string, input: unknown, known: KnownTypes): Entity
         lon: LON,
         heading: { min: 0, max: 360 },
       });
-      return { ...head, name: name ?? head.id, route: validateRoute(`${path}.route`, route) };
+      return {
+        ...head,
+        ...(aiSpec ? { ai: aiSpec } : {}),
+        name: name ?? head.id,
+        route: validateRoute(`${path}.route`, route),
+      };
     }
     case 'waypoint': {
-      const head = validateSection<Omit<WaypointSpawn, 'name'>>(path, withoutName, {
+      const head = validateSection<Omit<WaypointSpawn, 'name' | 'ai'>>(path, withoutName, {
         id: { type: 'string' },
         kind: { type: 'enum', values: ['waypoint'] },
         lat: LAT,
@@ -228,6 +242,25 @@ export function validateMission(input: unknown, known: KnownTypes): Mission {
     seen.add(e.id);
     return e;
   });
+  for (const e of list)
+    if (e.ai?.role === 'wingman') {
+      const leader = list.find((x) => x.id === e.ai?.leaderId);
+      if (
+        !('faction' in e) ||
+        e.faction !== 'friendly' ||
+        (e.ai.leaderId !== 'player' &&
+          (!leader || leader.kind !== 'aircraft' || leader.faction !== 'friendly')) ||
+        e.ai.leaderId === e.id
+      )
+        throw new ConfigError(`invalid wingman leader for ${e.id}`);
+      const visited = new Set([e.id]);
+      let next = leader;
+      while (next?.ai?.role === 'wingman') {
+        if (visited.has(next.id)) throw new ConfigError('cyclic wingman leaders');
+        visited.add(next.id);
+        next = list.find((x) => x.id === next?.ai?.leaderId);
+      }
+    }
   return { ...head, entities: list };
 }
 
@@ -282,6 +315,7 @@ export function createEntities(
           state: createInitialState(spawn, ground, type),
           controlledByPlayer: false,
           behaviour: toBehaviour(spawn.behaviour),
+          ai: spawn.ai,
         });
       }
       case 'ground-unit':
@@ -296,6 +330,7 @@ export function createEntities(
           groundHeight: ground,
           heading: spawn.heading,
           route: toRoute(spawn.route),
+          ai: spawn.ai,
         });
       case 'waypoint':
         return createWaypointEntity(spawn);

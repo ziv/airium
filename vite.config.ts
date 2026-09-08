@@ -37,6 +37,8 @@ export default defineConfig(({ command, isPreview }) => {
     ],
     test: {
       include: ['src/**/*.test.ts'],
+      // Keep wall-clock performance checks isolated from CPU-heavy combat/endurance tests.
+      fileParallelism: false,
     },
   };
 });

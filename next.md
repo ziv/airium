@@ -202,7 +202,7 @@ Implemented in `src/weapons/`, with `src/hud/combat-data.ts` and pooled Cesium e
 supply the M8 lock prerequisite; full radar/LOS/RWR remains M8. Try `?mission=weapons-range`
 with the default airborne start. The deterministic headless acceptance tests cover gun and IR
 kills, bomb-to-CCIP error below 2 m on flat terrain, and an incoming missile decoyed by flares.
-Enemy AI employment remains M9; the range drones are unarmed.
+M9 adds opt-in enemy AI employment; the range drones remain unarmed.
 
 ### Gun
 
@@ -261,7 +261,7 @@ Implemented in `src/sensors/`, integrated with weapons, the HUD and `F5` padlock
 Configuration is validated from `src/sensors/sensors.json`. Radar uses 4 Hz scans and
 size-scaled range; loaded terrain samples include curvature (unknown terrain is permissive).
 All aircraft emit radar; actual opponent lock commands and launches are covered headlessly,
-with autonomous employment remaining M9. `W` cycles mission steerpoints. Padlock remembers
+with autonomous employment added in M9. `W` cycles mission steerpoints. Padlock remembers
 the last designation through radar loss during a merge without retaining a weapon lock.
 Basic IR/RWR tones share the existing audio context; richer sound remains M11.
 Automated acceptance covers 40 km detection, Rmax launch, reciprocal RWR and camera geometry;
@@ -294,21 +294,35 @@ light up when it locks back, and padlock it through a merge.
 
 Goal: opponents that fly, fight and defend themselves credibly, with adjustable difficulty.
 
-- [ ] Aircraft AI as a state machine: `patrol` (waypoints/orbit) → `detect` (own sensor
+Implemented in `src/ai/`, with validated configuration in `src/ai/ai.json` and optional
+mission-spawn `ai` roles. New scenarios: `dogfight`, `wingman-patrol`, `air-defence`.
+`?difficulty=easy|medium|hard` selects the preset; `E`/`Q` command wingmen. Original training
+missions remain passive. State resets with `R`; RTB returns to the spawn area and loiters
+until M10 adds landing/rearm. `missilePk` is a seeded guidance-reliability gate, not a
+promise of a kill. All shots use the shared weapon physics and inventory rules.
+
+Validation includes cannon damage, intercept within 120 seconds, formation and commands,
+missile defence, sensor/launch gates, SAM/AAA reload/ammo, reproducibility, a medium 1-v-2
+win across a fixed eight-seed suite (idle loses all eight), and 600 simulated seconds over
+a synthetic 2,000 m alpine ridge. The latter is an offline regression fixture; a live
+10-minute Alps terrain-streaming run remains unverified. Live checks confirmed enemy and
+SAM attacks/RWR warnings; the user confirmed command messages and countermeasure counts.
+
+- [x] Aircraft AI as a state machine: `patrol` (waypoints/orbit) → `detect` (own sensor
       model with reaction delay) → `engage` → `defend` → `disengage`/`RTB`
       (low fuel/health/ammo); crashes avoided by a terrain-avoidance override (pull up when
       predicted AGL falls under a floor).
-- [ ] Engage: pure/lead/lag pursuit selection, energy management (target speed, don't stall),
+- [x] Engage: pure/lead/lag pursuit selection, energy management (target speed, don't stall),
       gun employment inside range/angle limits with lead, missile employment inside the
       envelope with launch spacing, re-attack after overshoot.
-- [ ] Defend: break turn into the missile, notch, dive/climb, dispense countermeasures on
+- [x] Defend: break turn into the missile, notch, dive/climb, dispense countermeasures on
       launch warning, evade guns.
-- [ ] Wingman/formation: friendlies hold position relative to a leader and engage on command.
-- [ ] Ground defences: SAM site (search radar → track → launch, reload time, engagement
+- [x] Wingman/formation: friendlies hold position relative to a leader and engage on command.
+- [x] Ground defences: SAM site (search radar → track → launch, reload time, engagement
       zone), AAA (lead-aimed bursts with dispersion), both with an enable range and ammo.
-- [ ] Difficulty presets: reaction time, aim error, max g used, missile Pk, in config.
-- [ ] Seeded RNG so replays and tests are deterministic.
-- [ ] Unit tests (headless, fast-forwarded): AI intercepts a straight target in under N s,
+- [x] Difficulty presets: reaction time, aim error, max g used, missile Pk, in config.
+- [x] Seeded RNG so replays and tests are deterministic.
+- [x] Unit tests (headless, fast-forwarded): AI intercepts a straight target in under N s,
       does not fly into a 2 000 m ridge, launches only inside the envelope, wingman keeps
       station.
 

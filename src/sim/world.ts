@@ -1,3 +1,5 @@
+import { AISystem } from '../ai/system';
+import { AI, type AIConfig } from '../ai/config';
 /**
  * The world: every entity, stepped in a deterministic order by one fixed
  * time step. Aircraft fly the flight model (the player with the pilot's
@@ -58,14 +60,17 @@ export class World {
   private projectileCounter = 0;
   readonly combat: CombatSystem;
   readonly sensors: SensorSystem;
+  readonly ai: AISystem;
 
   constructor(
     readonly env: WorldEnvironment,
     readonly cfg: WorldConfig,
     weapons: WeaponsConfig = WEAPONS,
+    ai: AIConfig = AI,
   ) {
     this.combat = new CombatSystem(this, weapons);
     this.sensors = new SensorSystem(this);
+    this.ai = new AISystem(this, ai);
   }
 
   get entities(): readonly Entity[] {
@@ -114,6 +119,7 @@ export class World {
     this.projectileCounter = 0;
     this.combat.reset();
     this.sensors.reset();
+    this.ai.reset();
   }
 
   /** Update order: by kind, then by insertion. */
@@ -177,6 +183,7 @@ export class World {
         previous.set(e.id, { lat: e.lat, lon: e.lon, height: e.height });
     this.time += dt;
     this.sensors.step(terrain);
+    this.ai.step(terrain);
     this.combat.step(dt);
 
     for (const e of this.list) {
@@ -222,12 +229,14 @@ export class World {
   ): void {
     const controls = e.controlledByPlayer
       ? playerControls
-      : autopilot(
-          e.state,
-          aircraftTarget(e, this.env.environment.earthRadius),
-          e.type,
-          this.env.environment.gravity,
-        );
+      : e.ai
+        ? e.controls
+        : autopilot(
+            e.state,
+            aircraftTarget(e, this.env.environment.earthRadius),
+            e.type,
+            this.env.environment.gravity,
+          );
     e.controls = controls;
     e.state = stepAircraftPhysics(e.state, controls, e.model, terrain(e.lat, e.lon), dt);
     if (e.systems.fuelLeak > 0)

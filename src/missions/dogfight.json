@@ -1,0 +1,42 @@
+{
+  "name": "Two-bandit intercept",
+  "description": "Medium 1-v-2 combat. Start airborne, throttle up, T selects, L locks, 3 radar, Space fires, X defends. Difficulty: ?difficulty=easy|medium|hard. R restarts.",
+  "entities": [
+    {
+      "id": "bandit-one",
+      "name": "Bandit One",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "hostile",
+      "lat": 32.1,
+      "lon": 34.94,
+      "height": 2400,
+      "heading": 270,
+      "speed": 260,
+      "behaviour": {
+        "mode": "straight"
+      },
+      "ai": {
+        "role": "combat"
+      }
+    },
+    {
+      "id": "bandit-two",
+      "name": "Bandit Two",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "hostile",
+      "lat": 32.12,
+      "lon": 34.97,
+      "height": 2400,
+      "heading": 270,
+      "speed": 260,
+      "behaviour": {
+        "mode": "straight"
+      },
+      "ai": {
+        "role": "combat"
+      }
+    }
+  ]
+}

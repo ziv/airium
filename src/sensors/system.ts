@@ -1,5 +1,5 @@
 /** Deterministic radar scans and navigation; no browser or renderer dependencies. */
-import { isAircraft, isProjectile, type AircraftEntity, type Entity } from '../sim/entities';
+import { isAircraft, isProjectile, isSurface, type Entity } from '../sim/entities';
 import { bearing, enuOffset, headingError, offsetLatLon } from '../sim/geo';
 import { dot, length, toRadians } from '../sim/math3d';
 import type { World, TerrainQuery } from '../sim/world';
@@ -92,10 +92,10 @@ export class SensorSystem {
     this.nextScan = 0;
     this.waypointIndex = 0;
   }
-  tracks(owner: AircraftEntity): Track[] {
+  tracks(owner: Entity): Track[] {
     return (this.scans.get(owner.id) ?? []).filter((t) => this.world.get(t.id)?.alive);
   }
-  targets(owner: AircraftEntity): Track[] {
+  targets(owner: Entity): Track[] {
     return this.tracks(owner).filter((t) => {
       const e = this.world.get(t.id);
       return e && validTarget(owner, e);
@@ -118,13 +118,18 @@ export class SensorSystem {
     if (this.world.time < this.nextScan) return;
     this.nextScan = this.world.time + 1 / this.cfg.updateHz;
     this.scans.clear();
-    for (const owner of this.world.aircraft()) {
+    for (const owner of this.world.entities) {
+      if (!isAircraft(owner) && !(isSurface(owner) && owner.ai)) continue;
       if (!owner.alive) continue;
+      const radar = isSurface(owner)
+        ? { ...this.cfg, azimuth: 180, elevation: 89, maxRange: this.world.ai.cfg.tuning.samRange }
+        : this.cfg;
       const tracks = this.world.entities
-        .map((e) => detect(owner, e, this.world.env.environment.earthRadius, this.cfg, terrain))
+        .map((e) => detect(owner, e, this.world.env.environment.earthRadius, radar, terrain))
         .filter((t): t is Track => t !== null)
         .sort((a, b) => a.range - b.range || a.id.localeCompare(b.id));
       this.scans.set(owner.id, tracks);
+      if (!isAircraft(owner)) continue;
       if (owner.weapons.lockId && !this.targets(owner).some((t) => t.id === owner.weapons.lockId))
         owner.weapons.lockId = null;
       if (
@@ -134,18 +139,24 @@ export class SensorSystem {
         owner.weapons.targetId = null;
     }
   }
-  threats(owner: AircraftEntity): Threat[] {
+  threats(owner: Entity): Threat[] {
     const out: Threat[] = [],
       R = this.world.env.environment.earthRadius;
     const heading = Math.atan2(owner.attitude.forward.x, owner.attitude.forward.y);
     for (const e of this.world.entities) {
       if (!e.alive || !enemies(owner.faction, e.faction)) continue;
       const relative = headingError(heading, bearing(owner, e, R));
-      if (isAircraft(e) && this.tracks(e).some((t) => t.id === owner.id))
+      if (
+        (isAircraft(e) || (isSurface(e) && e.ai?.role === 'sam')) &&
+        this.tracks(e).some((t) => t.id === owner.id)
+      )
         out.push({
           id: e.id,
           bearing: relative,
-          level: e.weapons.lockId === owner.id ? 'lock' : 'search',
+          level:
+            (isAircraft(e) ? e.weapons.lockId : this.world.ai.state(e.id)?.lockId) === owner.id
+              ? 'lock'
+              : 'search',
         });
       if (
         isProjectile(e) &&

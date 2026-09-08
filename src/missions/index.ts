@@ -3,11 +3,17 @@ import { AIRCRAFT_IDS } from '../aircraft';
 import { type Mission, validateMission } from '../sim/spawn';
 import { ConfigError } from '../sim/validate';
 import { UNIT_IDS } from '../units';
+import dogfight from './dogfight.json';
+import wingmanPatrol from './wingman-patrol.json';
+import airDefence from './air-defence.json';
 import coastalPatrol from './coastal-patrol.json';
 import weaponsRange from './weapons-range.json';
 
 const SOURCES: Record<string, unknown> = {
   'coastal-patrol': coastalPatrol,
+  dogfight,
+  'wingman-patrol': wingmanPatrol,
+  'air-defence': airDefence,
   'weapons-range': weaponsRange,
 };
 

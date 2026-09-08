@@ -1,0 +1,42 @@
+{
+  "name": "Air defence range",
+  "description": "Armed SAM and AAA with limited ammunition and reload times. RWR shows search, lock and incoming missiles. Use X for chaff/flares, 4 for ground attack.",
+  "entities": [
+    {
+      "id": "sam",
+      "name": "SAM battery",
+      "kind": "ground-unit",
+      "type": "sam-site",
+      "faction": "hostile",
+      "lat": 32.104,
+      "lon": 34.92,
+      "heading": 270,
+      "route": null,
+      "ai": {
+        "role": "sam"
+      }
+    },
+    {
+      "id": "aaa",
+      "name": "AAA battery",
+      "kind": "ground-unit",
+      "type": "sam-site",
+      "faction": "hostile",
+      "lat": 32.1,
+      "lon": 34.83,
+      "heading": 270,
+      "route": null,
+      "ai": {
+        "role": "aaa"
+      }
+    },
+    {
+      "id": "wp-defence",
+      "name": "SAM site",
+      "kind": "waypoint",
+      "lat": 32.104,
+      "lon": 34.92,
+      "height": 0
+    }
+  ]
+}

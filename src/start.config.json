@@ -103,6 +103,8 @@
       "cameraFlyby": ["F4"],
       "cameraPadlock": ["F5"],
       "waypoint": ["w", "W"],
+      "wingmenEngage": ["e", "E"],
+      "wingmenRejoin": ["q", "Q"],
       "mouseFlight": ["m", "M"],
       "buildings": ["o", "O"],
       "units": ["u", "U"],

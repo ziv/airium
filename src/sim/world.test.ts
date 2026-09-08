@@ -334,7 +334,7 @@ describe('performance', () => {
       w.add(e);
     }
     for (let i = 0; i < 200; i++) {
-      const p = offsetLatLon({ lat: 32, lon: 35 }, Math.random() * 4000, Math.random() * 4000, R);
+      const p = offsetLatLon({ lat: 32, lon: 35 }, (i * 173) % 4000, (i * 397) % 4000, R);
       w.spawnProjectile({
         kind: 'bullet',
         ownerId: 'j0',

@@ -1,3 +1,4 @@
+import type { AISpec } from '../ai/config';
 /**
  * Everything that lives in the world besides terrain. Entities are plain
  * mutable records updated in place by `World.step`; the aircraft kind wraps
@@ -59,6 +60,7 @@ export type Behaviour =
   | { mode: 'waypoints'; route: Route };
 
 export interface EntityBase {
+  ai?: AISpec;
   id: string;
   name: string;
   kind: EntityKind;
@@ -158,6 +160,7 @@ export function syncAircraft(e: AircraftEntity): void {
 }
 
 export interface AircraftSpec {
+  ai?: AISpec;
   id: string;
   name: string;
   faction: Faction;
@@ -172,6 +175,7 @@ export interface AircraftSpec {
 
 export function createAircraftEntity(spec: AircraftSpec): AircraftEntity {
   const e: AircraftEntity = {
+    ...(spec.ai ? { ai: { ...spec.ai } } : {}),
     id: spec.id,
     name: spec.name,
     kind: 'aircraft',
@@ -210,6 +214,7 @@ export function createAircraftEntity(spec: AircraftSpec): AircraftEntity {
 }
 
 export interface SurfaceSpec {
+  ai?: AISpec;
   id: string;
   name: string;
   faction: Faction;
@@ -227,6 +232,7 @@ export function createSurfaceEntity(spec: SurfaceSpec): SurfaceEntity {
   const heading = toRadians(spec.heading);
   const height = spec.type.kind === 'ship' ? 0 : spec.groundHeight;
   return {
+    ...(spec.ai ? { ai: { ...spec.ai } } : {}),
     id: spec.id,
     name: spec.name,
     kind: spec.type.kind,

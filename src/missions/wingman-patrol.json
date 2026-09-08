@@ -1,0 +1,69 @@
+{
+  "name": "Wingman patrol",
+  "description": "A wingman follows the player. E orders engagement; Q orders rejoin. Two hostile fighters approach from the east.",
+  "entities": [
+    {
+      "id": "wingman",
+      "name": "Wingman",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "friendly",
+      "lat": 32.0991052467175,
+      "lon": 34.79969669212359,
+      "height": 2400,
+      "heading": 90,
+      "speed": 260,
+      "behaviour": {
+        "mode": "straight"
+      },
+      "ai": {
+        "role": "wingman",
+        "leaderId": "player"
+      }
+    },
+    {
+      "id": "bandit-one",
+      "name": "Bandit One",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "hostile",
+      "lat": 32.1,
+      "lon": 34.94,
+      "height": 2400,
+      "heading": 270,
+      "speed": 260,
+      "behaviour": {
+        "mode": "straight"
+      },
+      "ai": {
+        "role": "combat"
+      }
+    },
+    {
+      "id": "bandit-two",
+      "name": "Bandit Two",
+      "kind": "aircraft",
+      "type": "f16",
+      "faction": "hostile",
+      "lat": 32.12,
+      "lon": 34.97,
+      "height": 2400,
+      "heading": 270,
+      "speed": 260,
+      "behaviour": {
+        "mode": "straight"
+      },
+      "ai": {
+        "role": "combat"
+      }
+    },
+    {
+      "id": "rally",
+      "name": "Rally",
+      "kind": "waypoint",
+      "lat": 32.15,
+      "lon": 34.84,
+      "height": 3000
+    }
+  ]
+}

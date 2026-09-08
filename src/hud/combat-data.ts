@@ -18,6 +18,7 @@ import { launchEnvelope } from '../weapons/targeting';
 import type { TargetSymbology } from './hud-data';
 
 export interface CombatHud {
+  aiInfo: string;
   tracks: Track[];
   threats: Threat[];
   radarRange: number;
@@ -57,6 +58,7 @@ export function buildCombatHud(
     ? (combat.missileTarget(player, w.selected) ?? combat.target(player))
     : combat.target(player);
   const out: CombatHud = {
+    aiInfo: `AI ${world.ai.difficulty.toUpperCase()}  ${world.aircraft().filter((e) => e.alive && world.ai.state(e.id)?.mode === 'engage').length} ENGAGED`,
     tracks: world.sensors.tracks(player),
     threats: world.sensors.threats(player),
     radarRange: world.sensors.cfg.maxRange,

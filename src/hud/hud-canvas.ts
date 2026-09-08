@@ -289,6 +289,7 @@ export class HudCanvas {
       h * 0.85 + 44,
       'right',
     );
+    this.text(c.aiInfo, w / 2, h * 0.97, 'center');
     if (c.systems.length) this.text(c.systems.join(' / '), w / 2, h * 0.93, 'center');
     if (c.message) this.text(c.message, w / 2, h * 0.24, 'center');
     if (c.incoming && flashOn(d.time, 4))

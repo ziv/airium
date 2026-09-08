@@ -3,6 +3,7 @@ import {
   type AircraftEntity,
   type Entity,
   type ProjectileEntity,
+  type SurfaceEntity,
   isAircraft,
   isProjectile,
 } from '../sim/entities';
@@ -269,6 +270,66 @@ export class CombatSystem {
     return projectile;
   }
 
+  /** Surface turrets use the same projectile physics, IFF, LOS and radar datalink. */
+  launchSurface(
+    owner: SurfaceEntity,
+    target: Entity,
+    id: 'radar' | 'gun',
+    direction: Vec3,
+  ): ProjectileEntity | null {
+    const ai = this.world.ai.state(owner.id),
+      tuning = this.world.ai.cfg.tuning;
+    const cfg = this.cfg.types[id],
+      range = length(enuOffset(owner, target, this.R));
+    if (
+      !owner.alive ||
+      !validTarget(owner, target) ||
+      !isAircraft(target) ||
+      !ai ||
+      ai.ammo <= 0 ||
+      !this.world.sensors.targets(owner).some((t) => t.id === target.id) ||
+      !this.world.sensors.visible(owner, target) ||
+      range > Math.min(cfg.maxRange, id === 'radar' ? tuning.samRange : tuning.aaaRange) ||
+      range < (id === 'radar' ? Math.max(cfg.minRange, tuning.samMinRange) : 100) ||
+      (id === 'radar' && ai.lockId !== target.id)
+    )
+      return null;
+    const aim = normalize(direction);
+    const attitude = attitudeFromHPR({
+      heading: Math.atan2(aim.x, aim.y),
+      pitch: Math.asin(clamp(aim.z, -1, 1)),
+      roll: 0,
+    });
+    const p = this.world.spawnProjectile({
+      kind: id === 'radar' ? 'missile' : 'bullet',
+      ownerId: owner.id,
+      faction: owner.faction,
+      lat: owner.lat,
+      lon: owner.lon,
+      height: owner.height + owner.radius + 2,
+      attitude,
+      velocity: add(owner.velocity, scale(aim, cfg.muzzleVelocity)),
+      ttl: cfg.lifetime,
+      dragFactor: cfg.dragFactor,
+      radius: cfg.radius,
+      damage: cfg.damage,
+      weaponId: id,
+      ...(id === 'radar' ? { targetId: target.id } : {}),
+      groundHeight: owner.groundHeight,
+    });
+    if (p) {
+      ai.ammo--;
+      p.name = id === 'radar' ? 'SAM' : 'AAA';
+      this.emit({
+        kind: id === 'radar' ? 'launch' : 'shot',
+        ownerId: owner.id,
+        targetId: target.id,
+        weaponId: id,
+      });
+    }
+    return p;
+  }
+
   muzzle(owner: AircraftEntity, id: WeaponId): Position {
     const cfg = this.cfg.types[id],
       a = owner.attitude;
@@ -304,7 +365,7 @@ export class CombatSystem {
         add(scale(owner.velocity, 0.35), scale(owner.attitude.right, decoy === 'flare' ? -25 : 25)),
       );
     }
-    this.notify(owner, 'COUNTERMEASURES');
+    this.notify(owner, `${released.map((d) => d.toUpperCase()).join(' + ')} RELEASED`);
     for (const p of this.world.entities) {
       if (
         !isProjectile(p) ||
@@ -353,7 +414,12 @@ export class CombatSystem {
         p.guidance = 'active';
       else {
         const owner = this.world.get(p.ownerId);
-        if (!owner || !owner.alive || !isAircraft(owner) || owner.weapons.lockId !== p.targetId) {
+        if (
+          !owner ||
+          !owner.alive ||
+          (isAircraft(owner) ? owner.weapons.lockId : this.world.ai.state(owner.id)?.lockId) !==
+            p.targetId
+        ) {
           p.guidance = 'lost';
           return powered;
         }

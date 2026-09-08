@@ -1,0 +1,58 @@
+{
+  "difficulty": "medium",
+  "seed": 9009,
+  "tuning": {
+    "decisionHz": 10,
+    "terrainLookahead": 25,
+    "terrainFloor": 600,
+    "terrainSamples": 12,
+    "cruiseSpeed": 280,
+    "minSpeed": 150,
+    "memorySeconds": 25,
+    "disengageSeconds": 12,
+    "bingoFraction": 0.15,
+    "retreatHealth": 0.3,
+    "gunRange": 1600,
+    "gunCone": 1.2,
+    "burstSeconds": 0.6,
+    "burstPause": 1.4,
+    "leadSeconds": 8,
+    "overshootRange": 700,
+    "formationSpacing": 350,
+    "samRange": 24000,
+    "samMinRange": 1000,
+    "samAmmo": 6,
+    "samReload": 14,
+    "aaaRange": 3500,
+    "aaaAmmo": 600,
+    "aaaReload": 3,
+    "aaaDispersion": 0.7,
+    "extendSeconds": 3,
+    "gunPitchGain": 20,
+    "gunPitchDamping": 2,
+    "aaaBurstRounds": 12
+  },
+  "presets": {
+    "easy": {
+      "reactionSeconds": 3,
+      "aimError": 1.2,
+      "maxG": 4,
+      "missilePk": 0.55,
+      "launchSpacing": 18
+    },
+    "medium": {
+      "reactionSeconds": 1.5,
+      "aimError": 0.5,
+      "maxG": 6,
+      "missilePk": 0.8,
+      "launchSpacing": 12
+    },
+    "hard": {
+      "reactionSeconds": 0.6,
+      "aimError": 0.15,
+      "maxG": 8,
+      "missilePk": 0.95,
+      "launchSpacing": 7
+    }
+  }
+}

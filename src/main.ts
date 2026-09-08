@@ -1,3 +1,4 @@
+import { difficultyFromSearch } from './ai/config';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './style.css';
 import { getAircraftType } from './aircraft';
@@ -85,6 +86,7 @@ async function main(): Promise<void> {
 
   // The world: the player plus whatever the mission spawns.
   const world = new World({ ground: sim.ground, environment: sim.environment }, sim.world);
+  world.ai.difficulty = difficultyFromSearch(window.location.search);
   const entities = new EntityRenderer(viewer, sim.world.lodDistance, (e: Entity) => {
     if (e.kind === 'aircraft') return e.type.model;
     if (e.kind === 'ground-unit' || e.kind === 'ship') return e.type.model;
@@ -266,6 +268,12 @@ async function main(): Promise<void> {
           break;
         case 'cameraOrbit':
           rig.setMode('orbit');
+          break;
+        case 'wingmenEngage':
+          if (!clock.paused && player.alive && settled) world.ai.commandWingmen(true);
+          break;
+        case 'wingmenRejoin':
+          if (!clock.paused && player.alive && settled) world.ai.commandWingmen(false);
           break;
         case 'waypoint':
           world.sensors.cycleWaypoint();
