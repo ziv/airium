@@ -1,7 +1,6 @@
-import { difficultyFromSearch } from './ai/config';
+import { showSetup } from './setup/page';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './style.css';
-import { getAircraftType } from './aircraft';
 import { DebugPanel } from './hud/debug-panel';
 import { HudCanvas } from './hud/hud-canvas';
 import { buildHudData } from './hud/hud-data';
@@ -10,7 +9,6 @@ import { WeaponAudio } from './weapons/audio';
 import { keyLabel } from './input/actions';
 import { InputManager } from './input/controls';
 import { formatLegend, legendEntries } from './input/legend';
-import { getMission } from './missions';
 import { OwnAircraft } from './render/aircraft-model';
 import { CameraRig, setCameraFov } from './render/cameras';
 import { EntityRenderer } from './render/entities';
@@ -27,12 +25,9 @@ import {
   interpolateState,
 } from './sim/physics';
 import { SimClock } from './sim/sim-clock';
-import { resolveSimConfig } from './sim/sim-config';
 import { createEntities } from './sim/spawn';
 import { warningsFor } from './sim/warnings';
 import { World } from './sim/world';
-import startJson from './start.config.json';
-import { getUnitType } from './units';
 import { createViewer } from './viewer';
 
 /** Longest we wait for terrain tiles under the start point before flying anyway. */
@@ -45,13 +40,16 @@ async function main(): Promise<void> {
     throw new Error('Missing #cesiumContainer element in index.html');
   }
 
-  const sim = resolveSimConfig(startJson, window.location.search);
+  const settings = await showSetup();
+  const { sim } = settings;
+  const getAircraftType = (id: string) => settings.aircraft[id]!;
+  const getUnitType = (id: string) => settings.units[id]!;
   const { start } = sim;
   const aircraft = getAircraftType(start.aircraft);
   const model: FlightModel = { aircraft, ground: sim.ground, environment: sim.environment };
   const preset = sim.graphics.presets[sim.graphics.preset];
   if (preset === undefined) throw new Error(`unknown graphics preset "${sim.graphics.preset}"`);
-  const mission = start.mission.trim() === '' ? null : getMission(start.mission);
+  const mission = start.mission.trim() === '' ? null : settings.missions[start.mission]!;
   const earthRadius = sim.environment.earthRadius;
 
   const { viewer, terrainReady } = createViewer(container, sim.ion.token);
@@ -85,8 +83,14 @@ async function main(): Promise<void> {
   });
 
   // The world: the player plus whatever the mission spawns.
-  const world = new World({ ground: sim.ground, environment: sim.environment }, sim.world);
-  world.ai.difficulty = difficultyFromSearch(window.location.search);
+  const world = new World(
+    { ground: sim.ground, environment: sim.environment },
+    sim.world,
+    settings.weapons,
+    settings.ai,
+    settings.sensors,
+  );
+  world.ai.difficulty = settings.ai.difficulty;
   const entities = new EntityRenderer(viewer, sim.world.lodDistance, (e: Entity) => {
     if (e.kind === 'aircraft') return e.type.model;
     if (e.kind === 'ground-unit' || e.kind === 'ship') return e.type.model;

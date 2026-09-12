@@ -13,6 +13,24 @@ The Cesium Ion token is read from `ion.token` in `src/start.config.json`. Ion to
 restricted to specific origins (e.g. GitHub Pages and localhost), which is what makes committing
 one acceptable. Without a token the globe renders with OpenStreetMap imagery and no terrain.
 
+## Flight setup
+
+The game opens on a setup page before creating the simulation. Select a mission (or free
+flight), aircraft, starting position, height, heading, airspeed, field of view, and UTC date
+and time. Click the starting-location map to set latitude and longitude; drag to pan,
+scroll to zoom, or use World and Center on start. Typed coordinates update the map marker.
+Selecting a start location does not relocate mission entities. A blank date/time uses the current time. Existing URL parameters prefill the page.
+
+Expand the sections to edit aircraft properties and loadouts, AI difficulty and tuning,
+graphics, HUD, controls, camera, environment, landing rules, simulation, weapons, sensors,
+mission entities/routes, and surface units. Lists such as mission entities and key bindings
+use JSON editors. Aircraft edits apply to every instance of that type in the selected mission.
+Invalid settings show an error before launch.
+
+Click **Start flight** to fly with the selected settings. **R** resets that flight using the
+same settings. Reload to return to setup; edits are session-only. **Restore defaults** clears
+all edits and URL overrides from the form.
+
 ## Flying
 
 The player flies an F-16-class jet (`src/aircraft/f16.json`); `?aircraft=trainer` selects the light

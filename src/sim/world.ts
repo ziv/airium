@@ -7,6 +7,7 @@ import { AI, type AIConfig } from '../ai/config';
  * terrain, projectiles fly ballistically, then collisions are resolved and
  * wrecks expire. Pure TypeScript, no Cesium.
  */
+import { SENSORS, type SensorConfig } from '../sensors/config';
 import { SensorSystem } from '../sensors/system';
 import { autopilot } from './autopilot';
 import { aircraftTarget, surfaceMotion } from './behaviour';
@@ -67,9 +68,10 @@ export class World {
     readonly cfg: WorldConfig,
     weapons: WeaponsConfig = WEAPONS,
     ai: AIConfig = AI,
+    sensors: SensorConfig = SENSORS,
   ) {
     this.combat = new CombatSystem(this, weapons);
-    this.sensors = new SensorSystem(this);
+    this.sensors = new SensorSystem(this, sensors);
     this.ai = new AISystem(this, ai);
   }
 

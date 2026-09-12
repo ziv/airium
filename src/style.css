@@ -48,3 +48,229 @@ body,
   pointer-events: none;
   z-index: 5;
 }
+
+#flight-setup {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: auto;
+  color: #e5f2ee;
+  background: radial-gradient(ellipse at top right, #214c50 0, transparent 55%), #0b171d;
+  font:
+    13px/1.4 system-ui,
+    sans-serif;
+  color-scheme: dark;
+}
+.setup-shell {
+  max-width: 1440px;
+  margin: auto;
+  padding: 10px 12px;
+}
+.setup-shell header {
+  margin-bottom: 14px;
+}
+.setup-shell h1 {
+  font-size: 26px;
+  line-height: 1.15;
+  margin: 4px 0;
+  letter-spacing: -0.5px;
+}
+.setup-shell p {
+  color: #a9c1c3;
+}
+.setup-shell .eyebrow {
+  color: #95e7c8;
+  font:
+    12px ui-monospace,
+    monospace;
+  letter-spacing: 3px;
+}
+.setup-fields {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.setup-shell details {
+  border: 1px solid #355055;
+  border-radius: 6px;
+  background: #10232b;
+}
+.setup-shell summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 2px 12px 12px;
+}
+.field-grid > details,
+.wide-field {
+  grid-column: 1 / -1;
+}
+.field-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #bcd0d0;
+}
+.setup-shell input,
+.setup-shell select,
+.setup-shell textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid #486168;
+  border-radius: 5px;
+  background: #0a1920;
+  color: #edf8f3;
+  font: inherit;
+}
+.setup-shell input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  accent-color: #95e7c8;
+}
+.setup-shell textarea {
+  font:
+    12px/1.5 ui-monospace,
+    monospace;
+  resize: vertical;
+}
+.setup-shell :focus-visible {
+  outline: 2px solid #95e7c8;
+  outline-offset: 3px;
+}
+.setup-shell footer {
+  position: sticky;
+  bottom: 0;
+  background: #0b171df5;
+  padding: 10px 0;
+  margin-top: 12px;
+}
+.setup-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.setup-actions span {
+  flex: 1;
+  font-size: 12px;
+  color: #9cb4b8;
+}
+.setup-shell button {
+  cursor: pointer;
+  border: 1px solid #486168;
+  border-radius: 6px;
+  padding: 9px 12px;
+  background: #172b34;
+  color: #e5f2ee;
+  font:
+    600 14px system-ui,
+    sans-serif;
+}
+.setup-shell .launch {
+  background: #95e7c8;
+  color: #102b25;
+  white-space: nowrap;
+}
+.setup-shell .setup-error {
+  color: #ffb6a7;
+  margin: 0 0 12px;
+}
+.setup-error:empty {
+  display: none;
+}
+@media (max-width: 680px) {
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+  .setup-shell {
+    padding: 14px 10px;
+  }
+  .setup-actions {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .setup-actions span {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .setup-actions .launch {
+    margin-left: auto;
+  }
+}
+
+.setup-primary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: stretch;
+}
+.setup-primary .field-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.map-panel {
+  min-width: 0;
+  border: 1px solid #355055;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #10232b;
+}
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+}
+.map-toolbar strong {
+  margin-right: auto;
+}
+.setup-shell .map-toolbar button {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.location-map {
+  height: 260px;
+  position: relative;
+}
+.map-caption,
+.map-note {
+  margin: 5px 10px;
+  font-size: 11px;
+}
+.map-note {
+  opacity: 0.8;
+}
+.setup-shell .cesium-widget-credits {
+  font-size: 10px;
+}
+.setup-shell .cesium-widget-credits a {
+  color: white;
+}
+@media (min-width: 1100px) {
+  .setup-primary .field-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 800px) {
+  .setup-primary,
+  .setup-fields {
+    grid-template-columns: 1fr;
+  }
+  .location-map {
+    height: 240px;
+  }
+}
+@media (max-width: 480px) {
+  .field-grid,
+  .setup-primary .field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
